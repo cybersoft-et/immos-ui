@@ -1,0 +1,43 @@
+name: Deploy to Shared Domain
+
+on:
+  push:
+    branches:
+      - dev  # Trigger on pushes to the 'dev' branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH key
+        uses: shivammathur/setup-ssh-key@v2
+        with:
+          private-key: ${{ SHA256:ptgzw/ctl9KDqbkqQ8fbzgqSTNw3FixM2LmHgFFqMJc }} # Store your SSH private key as a secret in GitHub
+
+      - name: Add known_hosts (Optional but recommended for security)
+        run: ssh-keyscan https://dagublogs.com >> ~/.ssh/known_hosts # Replace your-domain.com
+
+      - name: Deploy to server
+        run: |
+          ssh dagublsb@dagublogs.com "
+            cd /domains/dagublogs.com/public_html/cyber && # Replace with the actual path on your server
+            git pull origin dev && # Or the appropriate branch on your server
+            # Add any other deployment commands here, e.g.,
+            # npm install --production &&
+            # npm run build &&
+            # systemctl restart your-service  # If you're running a service
+          "
+
+      - name: Slack Notification (Optional)
+        uses: rtCamp/action-slack-notify@v2
+        if: always() # Send notification regardless of success or failure
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }} # Store your Slack webhook URL as a secret
+          MESSAGE: |
+            Deployment to shared domain for commit ${{ github.sha }} on branch ${{ github.ref }} is ${{ job.status }}.
+            Repository: ${{ github.repository }}
+            Commit URL: ${{ github.event.head_commit.url }}
