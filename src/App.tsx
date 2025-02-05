@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route, BrowserRouter } from "react-router-dom";
 import Login from "./components/core/login";
 import "./App.css";
 import Signup from "./components/core/Signup";
@@ -7,7 +7,8 @@ import Dashboard from "./crm/dashboard";
 const App = () => {
 
   return (
-    <Router>
+    <>
+     <BrowserRouter>
       <Routes>        
         <Route path="/" element={<Login />}></Route>
         <Route path="/login" element={<Login />}></Route>
@@ -15,7 +16,8 @@ const App = () => {
         <Route path="/" element={<Login /> } /> 
         <Route path="/dashboard" element={<Dashboard /> } />                  
       </Routes>
-    </Router>
+    </BrowserRouter>
+    </>
   );
 };
 

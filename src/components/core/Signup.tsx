@@ -1,31 +1,63 @@
 import React, { useState } from "react";
+import { useSelector } from "react-redux";
+import { useRegisterMutation } from "./services/authApi";
+import { useNavigate } from "react-router-dom";
+import { getRegistrationError } from "./state/registration";
 
 export default function Signup() {
 
+  const [Register] = useRegisterMutation();
+  const error = useSelector(getRegistrationError);  
+
   const [formData, setFormData] = useState({ email: "", password: "", confirmPassword: "" });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [errorMsg , setErrMsg] = useState("");
+  const [successMsg , setSuccMsg] = useState("");
+
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
-    
+
+    setErrMsg("");
+    setSuccMsg("");
+
+    const { email , password, confirmPassword } = formData;
     console.log('Signup -> formData', formData);
+
     if (!formData.email || !formData.password || !formData.confirmPassword) {
-      setError("All fields are required.");
+      setErrMsg("All fields are required.");
       return;
     }
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match.");
+      setErrMsg("Passwords do not match.");
       return;
     }
-    
-    setSuccess("Account created successfully!");
+
+    try {
+      const userData: any = await Register({ email , password, confirmPassword });
+
+      if(userData?.data.data){
+        console.log('Success:', userData);
+        setSuccMsg("Account created successfully!");
+        navigate('/');
+      }else{
+        console.log('Error:', error);
+      }
+    } catch (err : any) {
+      if(!err?.response){
+        setErrMsg('No Server Response');
+      }else if(err?.status === 400){
+        setErrMsg('Missing Username + Password');
+      }else if(err.data.Message){
+        setErrMsg('Error: {err.data.Message}');
+      }else{
+        setErrMsg('Login Failed!');
+      }
+    }
   };
 
   return (
@@ -36,8 +68,8 @@ export default function Signup() {
             <p className="text-gray-600">Multimodal Transport Management</p>
     
             <h2 className="mt-8 text-2xl font-bold">Create account</h2>
-            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-            {success && <p className="text-green-500 text-sm mb-4">{success}</p>}
+            {errorMsg && <p className="text-red-500 text-sm mb-4">{errorMsg}</p>}
+            {successMsg && <p className="text-green-500 text-sm mb-4">{successMsg}</p>}
             
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <div>
@@ -100,5 +132,4 @@ export default function Signup() {
         </div>
       );  
 };
-
 

@@ -1,33 +1,64 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useLoginMutation } from "./services/authApi";
+import { useSelector } from "react-redux";
+import { getLoginError } from "./state/auth";
 
 export default function Login () {
 
+  const [login] = useLoginMutation();
+  const error = useSelector(getLoginError);
+
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [errorMsg, setError] = useState("");
+  const [successMsg, setSuccess] = useState("");
+
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const { email , password } = formData;
+
     setError("");
     setSuccess("");
 
     console.log("Login -> formData", formData);
-
 
     if (!formData.email || !formData.password ) {
       setError("All fields are required.");
       return;
     }
 
-    if (formData.email === "admin@gmail.com" && formData.password === "password") {
-      setSuccess("Login Authenticated Successfully .");
+    if (formData.email !== null && formData.password != null) {
+      try {
+        const userData = await login({ email , password });
+  
+        if(userData?.data){
+          console.log('Success:', userData);
+          setSuccess("Login Authenticated Successfully .");
+          navigate('/dashboard');
+        }else{
+          console.log('Error:', error);
+          setError(`No Server Response : ${error}`);
+        }
+      } catch (err : any) {
+        if(!err?.response){
+          setError('No Server Response');
+        }else if(err?.status === 400){
+          setError('Missing Email + Password');
+        }else if(err.data.Message){
+          setError('Error: {err.data.Message}');
+        }else{
+          setError('Login Failed!');
+        }
+      }
     } else {
       setError("All fields are required.");
-      alert("Invalid credentials");
       return;
     }
 
@@ -40,8 +71,8 @@ export default function Login () {
             <p className="text-gray-600">Multimodal Transport Management</p>
     
             <h2 className="mt-8 text-2xl font-bold">Login </h2>
-            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-            {success && <p className="text-green-500 text-sm mb-4">{success}</p>}
+            {errorMsg && <p className="text-red-500 text-sm mb-4">{errorMsg}</p>}
+            {successMsg && <p className="text-green-500 text-sm mb-4">{successMsg}</p>}
             
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <div>
@@ -51,7 +82,7 @@ export default function Login () {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}                  
-                  placeholder="e.g: Abebe@gmail.com"
+                  placeholder="e.g: admin@gmail.com"
                   className="w-full p-2 mt-1 border rounded-lg bg-gray-100"
                   
                 />
