@@ -1,31 +1,26 @@
 import React, { useState } from "react";
-import { useSelector } from "react-redux";
-import { useRegisterMutation } from "./services/authApi";
 import { useNavigate } from "react-router-dom";
-import { getRegistrationError } from "./state/registration";
+import { useRegister } from "./services/authApi";
 
 export default function Signup() {
-
-  const [Register] = useRegisterMutation();
-  const error = useSelector(getRegistrationError);  
 
   const [formData, setFormData] = useState({ email: "", password: "", confirmPassword: "" });
   const [errorMsg , setErrMsg] = useState("");
   const [successMsg , setSuccMsg] = useState("");
 
   const navigate = useNavigate();
+  const mutation = useRegister();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e : React.FormEvent) => {
     e.preventDefault();
 
     setErrMsg("");
     setSuccMsg("");
 
-    const { email , password, confirmPassword } = formData;
     console.log('Signup -> formData', formData);
 
     if (!formData.email || !formData.password || !formData.confirmPassword) {
@@ -37,27 +32,18 @@ export default function Signup() {
       return;
     }
 
-    try {
-      const userData: any = await Register({ email , password, confirmPassword });
-
-      if(userData?.data.data){
-        console.log('Success:', userData);
-        setSuccMsg("Account created successfully!");
-        navigate('/');
-      }else{
-        console.log('Error:', error);
+    mutation.mutate(
+      { email: formData.email, password: formData.password, confirmPassword: formData.confirmPassword },
+      {
+        onSuccess: (data) => {
+          console.log('Success:', data);
+          navigate('/login');
+        },
+        onError: (error) => {
+          console.log('Error:', error);
+        },
       }
-    } catch (err : any) {
-      if(!err?.response){
-        setErrMsg('No Server Response');
-      }else if(err?.status === 400){
-        setErrMsg('Missing Username + Password');
-      }else if(err.data.Message){
-        setErrMsg('Error: {err.data.Message}');
-      }else{
-        setErrMsg('Login Failed!');
-      }
-    }
+    );
   };
 
   return (

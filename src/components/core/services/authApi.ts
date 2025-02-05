@@ -1,36 +1,21 @@
-import { api } from '../../../shared/services/api';
-import { LoginUser, RegisteringUser } from '../state/auth';
+import axios from 'axios';
+import { useMutation } from 'react-query';
 
+export const login = async ({ email, password }: { email: string; password: string }) => {
+  const response = await axios.post('/api/login', { email, password });
+  return response.data;
+};
 
-export const authApi = api.injectEndpoints({
-  endpoints: (build) => ({
-    login: build.mutation<{ token: string; user: LoginUser }, any>({
-      query: ( loginUser: LoginUser) => ({
-        url: 'https://localhost:5400/api/User/authenticate',
-        method: 'POST',
-        body: loginUser,
-      }),
-      invalidatesTags: [{ type: 'Login', id: '' }],
-      extraOptions: {
-      },
-    }),
-    register: build.mutation<{ token: string; user: RegisteringUser }, any>({
-      query: ( registeringUser: RegisteringUser) => ({
-        url: 'https://localhost:5400/api/User/register',
-        method: 'POST',
-        body: registeringUser,
-      }),
-      invalidatesTags: [{ type: 'Register', id: '' }],
-      extraOptions: {
-      },
-    }),
-  }),
-})
+export const register = async ({ email, password, confirmPassword }: { email: string; password: string; confirmPassword: string }) => {
+  const response = await axios.post('/api/register', { email, password, confirmPassword });
+  return response.data;
+};
 
-export const {
-  useLoginMutation
-  , useRegisterMutation
-} = authApi;
+export const useLogin = () => {
+  return useMutation(login);
+};
 
+export const useRegister = () => {
+  return useMutation(register);
+};
 
-export const { endpoints: { login }, } = authApi

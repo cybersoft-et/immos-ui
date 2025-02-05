@@ -1,13 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useLoginMutation } from "./services/authApi";
-import { useSelector } from "react-redux";
-import { getLoginError } from "./state/auth";
+import { useLogin } from "./services/authApi";
 
 export default function Login () {
 
-  const [login] = useLoginMutation();
-  const error = useSelector(getLoginError);
+  const mutation = useLogin();
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errorMsg, setError] = useState("");
@@ -19,10 +16,8 @@ export default function Login () {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e : React.FormEvent) => {
     e.preventDefault();
-
-    const { email , password } = formData;
 
     setError("");
     setSuccess("");
@@ -34,33 +29,20 @@ export default function Login () {
       return;
     }
 
-    if (formData.email !== null && formData.password != null) {
-      try {
-        const userData = await login({ email , password });
-  
-        if(userData?.data){
-          console.log('Success:', userData);
-          setSuccess("Login Authenticated Successfully .");
+    mutation.mutate(
+      { email: formData.email, password: formData.password },
+      {
+        onSuccess: (data) => {
+          console.log('Success:', data);
+          setSuccess('Login Authenticated Successfully.');
           navigate('/dashboard');
-        }else{
+        },
+        onError: (error) => {
           console.log('Error:', error);
-          setError(`No Server Response : ${error}`);
-        }
-      } catch (err : any) {
-        if(!err?.response){
           setError('No Server Response');
-        }else if(err?.status === 400){
-          setError('Missing Email + Password');
-        }else if(err.data.Message){
-          setError('Error: {err.data.Message}');
-        }else{
-          setError('Login Failed!');
-        }
+        },
       }
-    } else {
-      setError("All fields are required.");
-      return;
-    }
+    );
 
   };
 
