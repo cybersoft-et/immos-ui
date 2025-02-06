@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { useMutation } from 'react-query';
 
 export const login = async ({ email, password }: { email: string; password: string }) => {
   const response = await axios.post('/api/login', { email, password });
@@ -11,11 +10,5 @@ export const register = async ({ email, password, confirmPassword }: { email: st
   return response.data;
 };
 
-export const useLogin = () => {
-  return useMutation(login);
-};
 
-export const useRegister = () => {
-  return useMutation(register);
-};
 

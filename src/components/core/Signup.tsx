@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useRegister } from "./services/authApi";
+import { useRegister } from "./hooks";
 
 export default function Signup() {
 

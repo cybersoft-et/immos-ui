@@ -2,7 +2,7 @@ import { Routes, Route, BrowserRouter } from "react-router-dom";
 import Login from "./components/core/login";
 import "./App.css";
 import Signup from "./components/core/Signup";
-import Dashboard from "./crm/dashboard";
+import Dashboard from "./components/crm/dashboard";
 
 const App = () => {
 

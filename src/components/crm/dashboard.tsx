@@ -88,10 +88,10 @@ export default function Dashboard() {
 }
 
 
- function Card({ children, className }) {
-    return <div className={`bg-white shadow rounded-lg p-4 ${className}`}>{children}</div>;
-  }
+function Card({ children, className }) {
+  return <div className={`bg-white shadow rounded-lg p-4 ${className}`}>{children}</div>;
+}
   
-   function CardContent({ children }) {
-    return <div className="p-4">{children}</div>;
-  }
+function CardContent({ children }) {
+  return <div className="p-4">{children}</div>;
+}
