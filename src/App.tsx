@@ -2,7 +2,10 @@ import { Routes, Route, BrowserRouter } from "react-router-dom";
 import Login from "./components/core/login";
 import "./App.css";
 import Signup from "./components/core/Signup";
-import Dashboard from "./components/crm/dashboard";
+import Formcustomer from "./components/crm/formcustomer";
+import Home from "./components/crm/home";
+import Dashboard from "./components/crm/layout/dashboard";
+import FormCustomerManagment from "./components/crm/formcustomermag";
 
 const App = () => {
 
@@ -10,11 +13,13 @@ const App = () => {
     <>
      <BrowserRouter>
       <Routes>        
-        <Route path="/" element={<Login />}></Route>
         <Route path="/login" element={<Login />}></Route>
         <Route path="/signup" element={<Signup />}></Route>
-        <Route path="/" element={<Login /> } /> 
-        <Route path="/dashboard" element={<Dashboard /> } />                  
+        <Route path="/" element={<Home />}>
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="customerform" element={<Formcustomer /> } />   
+          <Route path="Customermanagment" element={<FormCustomerManagment /> } />              
+        </Route>              
       </Routes>
     </BrowserRouter>
     </>

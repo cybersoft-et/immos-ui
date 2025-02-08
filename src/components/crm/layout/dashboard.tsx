@@ -1,12 +1,7 @@
-import Sidebar from "./sidebar";
 
 export default function Dashboard() {
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      <Sidebar />
-      {/* Main Content */}
-      <main className="flex-1 p-6">
+    <div >
         <div className="grid grid-cols-3 gap-6">
           {/* Shipment Metrics */}
           <Card className="col-span-2">
@@ -21,7 +16,7 @@ export default function Dashboard() {
             <CardContent>
               <h3 className="font-semibold text-lg">Active Shipments</h3>
               <div className="flex justify-center items-center h-40">1,600 Shipments</div>
-            </CardContent>
+            </CardContent>  
           </Card>
         </div>
 
@@ -82,8 +77,7 @@ export default function Dashboard() {
             </table>
           </CardContent>
         </Card>
-      </main>
-    </div>
+        </div>
   );
 }
 

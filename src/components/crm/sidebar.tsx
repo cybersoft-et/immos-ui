@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Home, Package, Mail, CreditCard, Truck, Link, LineChart, Ship, Settings, HelpCircle, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const menuItems = [
-  { name: "Dashboard", icon: <Home size={20} /> },
+  { name: "Dashboard", icon: <Home size={20}  /> },
+  { name: "Customer Form", icon: <Home size={20} /> },
+  { name: "Customer Managment", icon: <Home size={20} /> },
   { name: "Order Tracking", icon: <Package size={20} /> },
   { name: "Messages", icon: <Mail size={20} /> },
   { name: "Billings", icon: <CreditCard size={20} /> },
@@ -14,7 +17,16 @@ const menuItems = [
 ];
 
 const Sidebar = () => {
-  const [activeItem, setActiveItem] = useState("CRM");
+  const [activeItem, setActiveItem] = useState("Dashboard");
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (activeItem !== null) {
+      navigate(activeItem.toLowerCase().replace(" ", ""));
+      console.log('Sidebar -> activeItem', activeItem);
+    }
+  }, [activeItem, navigate]);
 
   return (
     <div className="w-64 h-screen bg-white shadow-md flex flex-col p-5">
