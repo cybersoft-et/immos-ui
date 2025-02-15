@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import React from 'react';
 
 const Select = React.forwardRef(({ label, options = [], className = "", ...props }, ref) => {

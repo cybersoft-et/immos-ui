@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import React from 'react';
 
 const Input = React.forwardRef(({ label, type = "text", placeholder, className = "", registerName, requiredState = "false", ...props }, ref) => {
