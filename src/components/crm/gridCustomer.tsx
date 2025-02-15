@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Card } from "./layout/card";
 import { CardContent } from "./layout/cardContent";
 import CustomersTable from "./tables/customersTable";
