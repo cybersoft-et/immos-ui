@@ -1,571 +1,355 @@
+
+
+export default function FormCustomerManagment()
 import { useState } from "react";
+import { useMutation } from "react-query";
 
-export default function FormCustomerManagment() {
-    // const [formData, setFormData] = useState({
-    //     storageCharges: {
-    //         flOt20: {
-    //             day13to17: "",
-    //             day18onwards: "",
-    //         },
-    //         flOt40: {
-    //             day8to12: "",
-    //             day13to17: "",
-    //             day18onwards: "",
-    //         },
-    //     },
-    //     restrictionsAndProhibitions: {
-    //         restrictedGoods: {
-    //             import: {
-    //                 liveAnimals: false,
-    //                 plants: false,
-    //                 narcotics: false,
-    //                 humanRemains: false,
-    //                 pharmaceuticalProducts: false,
-    //                 medicines: false,
-    //                 foodAndDrinks: false,
-    //                 radioactiveMaterials: false,
-    //                 animalProducts: false,
-    //                 bullions: false,
-    //                 preciousStones: false,
-    //                 liquors: false,
-    //                 insecticide: false,
-    //                 sword: false,
-    //                 chemicals: false,
-    //                 steelBars: false,
-    //                 nails: false,
-    //                 safetyMatches: false,
-    //                 waterPump: false,
-    //                 lamps: false,
-    //                 communicationEquipment: false,
-    //                 explosives: false,
-    //                 tobacco: false,
-    //                 lotteryTickets: false,
-    //             },
-    //             export: {
-    //                 dgRequirements: false,
-    //             },
-    //         },
-    //         prohibitedGoods: {
-    //             import: {
-    //                 narcotics: false,
-    //                 counterfeitGoods: false,
-    //                 obsceneMaterials: false,
-    //                 firearms: false,
-    //                 culturalArtifacts: false,
-    //                 endangeredSpecies: false,
-    //                 radioactiveMaterials: false,
-    //                 wornClothing: false,
-    //                 usedRags: false,
-    //                 rightSteeringVehicles: false,
-    //                 money: false,
-    //                 toxicSubstances: false,
-    //                 sickAnimals: false,
-    //                 sickPlants: false,
-    //                 foreignLotteries: false,
-    //                 bonds: false,
-    //             },
-    //             export: {},
-    //         },
-    //     },
-    // });
+export default function FormCustomer() {
 
-    const [formData, setFormData] = useState({
-        crmRefNo: '',
-        date: '',
-        companyName: '',
-        customerID: '',
+    const [formData, setFormData] = useState({        
+        id: 0,
+        customerId: {
+            clientCode: '',
+            consecutiveNo: '',
+            createDate: ''
+        },
+        name: '',
+        clientCode: '',
+        customerType: 'Individual',
+        contactPersonId: 0,
+        alternateContactPersonId: 0,
+        contactPerson: {
+            id: 0,
+            firstName: '',
+            lastName: '',
+            name: '',
+            email: '',
+            mobilePhone: ''
+        },
+        alternateContactPerson: {
+            id: 0,
+            firstName: '',
+            lastName: '',
+            name: '',
+            email: '',
+            mobilePhone: ''
+        },
+        addressId: 0,
+        address: {
+            id: 0,
+            addressType: '',
+            region: '',
+            city: '',
+            subCity: '',
+            woreda: '',
+            kebele: '',
+            houseNo: '',
+            email: '',
+            fixedLinePhone: '',
+            mobilePhone: '',
+            locationNo: ''
+        },
+        companyHead: {
+            id: 0,
+            firstName: '',
+            lastName: '',
+            name: '',
+            email: '',
+            mobilePhone: ''
+        },
+        companyOwner: {
+            id: 0,
+            firstName: '',
+            lastName: '',
+            name: '',
+            email: '',
+            mobilePhone: ''
+        },
         industry: '',
-        companyAddress: '',
-        city: '',
-        businessPhone: '',
-        email: '',
-        website: '',
-        pglStaffName: '',
-        updatedBy: '',
-        customerCategory: '',
-        subCategory: '',
-        documentationRequirements: {
-            import: {
-                personalEffect: false,
-                passport: false,
-                idWorkPermit: false,
-                dutyFree: false,
-                billOfLading: false,
-                invoice: false,
-                packingList: false,
-                commercialClients: {
-                    billOfLading: false,
-                    invoice: false,
-                    packingList: false,
-                    certificateOfOrigin: false,
-                    bankPermit: false,
-                    insuranceReceipt: false,
-                    freightVouchers: false,
-                    containerGuarantee: false,
-                    businessLicense: false,
-                    agencyContract: false,
-                    delegation: false,
-                },
-                embassyAndInternationalOrgs: {
-                    dutyFree: false,
-                    billOfLading: false,
-                    invoice: false,
-                    packingList: false,
-                    agencyContract: false,
-                    delegation: false,
-                },
-                projectCargo: {
-                    billOfLading: false,
-                    invoice: false,
-                    packingList: false,
-                    voucherBook: false,
-                    businessLicense: false,
-                    agencyContract: false,
-                    delegation: false,
-                },
-                governments: {
-                    preImportPermit: false,
-                    billOfLading: false,
-                    invoice: false,
-                    packingList: false,
-                    certificateOfOrigin: false,
-                    dataSheet: false,
-                    analysisCertificate: false,
-                    businessLicense: false,
-                    competencyCertificate: false,
-                    agencyContract: false,
-                    delegation: false,
-                },
-                automotiveAndMachineries: {
-                    billOfLading: false,
-                    invoice: false,
-                    packingList: false,
-                    certificateOfOrigin: false,
-                    rtaPermit: false,
-                    bankPermit: false,
-                    freightVouchers: false,
-                    insurance: false,
-                    importPermit: false,
-                    businessLicense: false,
-                    agencyContract: false,
-                    poa: false,
-                },
-                returnee: {
-                    passport: false,
-                    embassyLetter: false,
-                    inventoryList: false,
-                    pglInvoice: false,
-                    billOfLading: false,
-                    agencyContract: false,
-                },
-            },
-            export: {
-                garments: {
-                    exportBankPermit: false,
-                    invoice: false,
-                    packingList: false,
-                    exportLicense: false,
-                    shippingInstruction: false,
-                    vgm: false,
-                    waybill: false,
-                    booking: false,
-                },
-                mining: {
-                    exportLicense: false,
-                    invoice: false,
-                    packingList: false,
-                    bankPermit: false,
-                    salesAgreement: false,
-                    cleanlinessCertificate: false,
-                    releaseForm: false,
-                    qualityCertificate: false,
-                    agencyContract: false,
-                },
-                coffee: {
-                    exportLicense: false,
-                    invoice: false,
-                    packingList: false,
-                    bankPermit: false,
-                    salesAgreement: false,
-                    cleanlinessCertificate: false,
-                    releaseForm: false,
-                    qualityCertificate: false,
-                    agencyContract: false,
-                },
-                spices: {
-                    exportLicense: false,
-                    invoice: false,
-                    packingList: false,
-                    bankPermit: false,
-                    salesAgreement: false,
-                    exportAuthorization: false,
-                    agencyContract: false,
-                    phytosanitaryCertificate: false,
-                    fumigationCertificate: false,
-                },
-                leatherAndHide: {
-                    dutyFree: false,
-                    invoice: false,
-                    packingList: false,
-                    previousDeclaration: false,
-                    vehicleClearance: false,
-                },
-                artAndAntique: {
-                    heritageAuthority: false,
-                },
-            },
-        },
-        customsRequirements: {
-            airShipment: '',
-            oceanShipment: '',
-            transitPermit: '',
-            partialShipments: '',
-        },
-        portCharges: {
-            djiboutiPort: {
-                dryContainers: {
-                    freeTime: '',
-                    day9to15: '',
-                    day16to20: '',
-                    day21to25: '',
-                    day26onwards: '',
-                },
-                dgReeferContainers: {
-                    day1to8: '',
-                    day9onwards: '',
-                },
-                oogContainers: {
-                    day1to3: '',
-                    day4to15: '',
-                    day16to30: '',
-                    day31onwards: '',
-                },
-                terminalHandlingCharges: {
-                    importDelivery: '',
-                    exportReception: '',
-                },
-            },
-            mombasaPort: '',
-            lamuPort: '',
-            berberaPort: '',
-        },
-        shippingLineCharges: {
-            cmaCgm: {
-                gp20: {
-                    day11to20: '',
-                    day21to40: '',
-                    day41onwards: '',
-                },
-                gp40: {
-                    day11to20: '',
-                    day21to40: '',
-                    day41onwards: '',
-                },
-                rf20: {
-                    day4to7: '',
-                    day8onwards: '',
-                },
-                rf40: {
-                    day4to7: '',
-                    day8onwards: '',
-                },
-                sp20: {
-                    day11to20: '',
-                    day21to40: '',
-                    day41onwards: '',
-                },
-                sp40: {
-                    day11to20: '',
-                    day21to40: '',
-                    day41onwards: '',
-                },
-            },
-            msc: {
-                import: {
-                    dv20: {
-                        firstPeriod: '',
-                        secondPeriod: '',
-                        tillEmptyReturn: '',
-                    },
-                    dcHc40: {
-                        firstPeriod: '',
-                        secondPeriod: '',
-                        tillEmptyReturn: '',
-                    },
-                },
-                export: {
-                    dv20: {
-                        firstPeriod: '',
-                        tillEmptyReturn: '',
-                    },
-                    dcHc40: {
-                        firstPeriod: '',
-                        tillEmptyReturn: '',
-                    },
-                },
-            },
-            maersk: {
-                import: {
-                    dv20: {
-                        day1to7: '',
-                        day7onwards: '',
-                    },
-                    specialImo20: {
-                        day1to7: '',
-                        day7onwards: '',
-                    },
-                    reefer20: {
-                        day1to7: '',
-                        day7onwards: '',
-                    },
-                    dcHc40: {
-                        day1to7: '',
-                        day7onwards: '',
-                    },
-                    specialImo40: {
-                        day1to7: '',
-                        day7onwards: '',
-                    },
-                    reefer40: {
-                        day1to7: '',
-                        day7onwards: '',
-                    },
-                },
-                export: {
-                    dv20: {
-                        day1to7: '',
-                        day7onwards: '',
-                    },
-                    specialImo20: {
-                        day1to7: '',
-                        day7onwards: '',
-                    },
-                    reefer20: {
-                        day1to7: '',
-                        day7onwards: '',
-                    },
-                    dcHc40: {
-                        day1to7: '',
-                        day7onwards: '',
-                    },
-                    specialImo40: {
-                        day1to7: '',
-                        day7onwards: '',
-                    },
-                    reefer40: {
-                        day1to7: '',
-                        day7onwards: '',
-                    },
-                },
-            },
-            wecLine: {
-                dv20: {
-                    day31to45: '',
-                    day46onwards: '',
-                },
-                special20: {
-                    day31to45: '',
-                    day46onwards: '',
-                },
-                dv40: {
-                    day31to45: '',
-                    day46onwards: '',
-                },
-                special40: {
-                    day31to45: '',
-                    day46onwards: '',
-                },
-            },
-            hapagLloyd: {
-                gp20: {
-                    firstPeriod: '',
-                    thereafter: '',
-                },
-                temperature20: {
-                    thereafter: '',
-                },
-                special20: {
-                    firstPeriod: '',
-                    thereafter: '',
-                },
-                gpHc40: {
-                    firstPeriod: '',
-                    thereafter: '',
-                },
-                temperature40: {
-                    thereafter: '',
-                },
-                special40: {
-                    firstPeriod: '',
-                    thereafter: '',
-                },
-            },
-            messina: {
-                dc20: {
-                    day8to12: '',
-                    day13to17: '',
-                    day18onwards: '',
-                },
-                flOt20: {
-                    day8to12: '',
-                    day13to17: '',
-                    day18onwards: '',
-                },
-                dc40: {
-                    day8to12: '',
-                    day13to17: '',
-                    day18onwards: '',
-                },
-                flOt40: {
-                    day8to12: '',
-                    day13to17: '',
-                    day18onwards: '',
-                },
-            },
-        },
-        restrictionsAndProhibitions: {
-            restrictedGoods: {
-                import: {
-                    liveAnimals: false,
-                    plants: false,
-                    narcotics: false,
-                    humanRemains: false,
-                    pharmaceuticalProducts: false,
-                    medicines: false,
-                    foodAndDrinks: false,
-                    radioactiveMaterials: false,
-                    animalProducts: false,
-                    bullions: false,
-                    preciousStones: false,
-                    liquors: false,
-                    insecticide: false,
-                    sword: false,
-                    chemicals: false,
-                    steelBars: false,
-                    nails: false,
-                    safetyMatches: false,
-                    waterPump: false,
-                    lamps: false,
-                    communicationEquipment: false,
-                    explosives: false,
-                    tobacco: false,
-                    lotteryTickets: false,
-                },
-                export: {
-                    dgRequirements: false,
-                },
-            },
-            prohibitedGoods: {
-                import: {
-                    narcotics: false,
-                    counterfeitGoods: false,
-                    obsceneMaterials: false,
-                    firearms: false,
-                    culturalArtifacts: false,
-                    endangeredSpecies: false,
-                    radioactiveMaterials: false,
-                    wornClothing: false,
-                    usedRags: false,
-                    rightSteeringVehicles: false,
-                    money: false,
-                    toxicSubstances: false,
-                    sickAnimals: false,
-                    sickPlants: false,
-                    foreignLotteries: false,
-                    bonds: false,
-                },
-                export: {
-                    // Add export prohibited goods here
-                },
-            },
-        },
+        specializations: [
+            ''
+        ],
+        categoryId: 0,
+        subCategoryId: 0,
+        companyOwnerId: 0,
+        companyHeadId: 0,
+        isActive: true
+                  
+      });
+    
+    const mutation = useMutation(async (newCustomer) => {
+    const response = await fetch("https://localhost:8000/api/core/Customers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newCustomer),
+        });
+        return response.json();
     });
 
+    const handleChange = (e) => {
+    const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    };
 
-    const handleChange = (category, subcategory, field, value) => {
-        setFormData((prevData) => ({
-            ...prevData,
-            [category]: {
-                ...prevData[category],
-                [subcategory]: {
-                    ...prevData[category][subcategory],
-                    [field]: value,
-                },
-            },
+    const handleNestedChange = (e, key) => {
+    const { name, value } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [key]: { ...prev[key], [name]: value },
         }));
     };
 
-    return (
-        // <div className="p-6 max-w-2xl mx-auto bg-white shadow-md rounded-xl">
-        //     <h2 className="text-xl font-semibold mb-4">Customs Form</h2>
-        <Card className="col-span-2">
-            <CardContent>
-                <h3 className="font-semibold text-lg mb-4">Customer Managment Form</h3>
-            
-            {/* Storage Charges Section */}
-            <div>
-                <h3 className="text-lg font-medium">Storage Charges</h3>
-                {Object.keys(formData.documentationRequirements).map((key) => (
-                    <div key={key} className="mb-4">
-                        <h4 className="font-semibold capitalize">{key}</h4>
-                        {Object.keys(formData.documentationRequirements[key]).map((subKey) => (
-                            <div key={subKey} className="mb-2">
-                                <label className="block text-sm font-medium">
-                                    {subKey.replace(/([A-Z])/g, " $1").trim()}:
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.documentationRequirements[key][subKey]}
-                                    onChange={(e) =>
-                                        handleChange("storageCharges", key, subKey, e.target.value)
-                                    }
-                                    className="w-full p-2 border rounded-md focus:ring focus:ring-blue-300"
-                                />
-                            </div>
-                        ))}
-                    </div>
-                ))}
-            </div>
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        mutation.mutate(formData);
+    };
 
-            {/* Restricted Goods Section */}
-            <div>
-                <h3 className="text-lg font-medium">Restricted Goods - Import</h3>
-                <div className="grid grid-cols-2 gap-4">
-                    {Object.keys(formData.restrictionsAndProhibitions.restrictedGoods.import).map(
-                        (key) => (
-                            <label key={key} className="flex items-center space-x-2">
-                                <input
-                                    type="checkbox"
-                                    checked={formData.restrictionsAndProhibitions.restrictedGoods.import[key]}
-                                    onChange={(e) =>
-                                        handleChange(
-                                            "restrictionsAndProhibitions",
-                                            "restrictedGoods",
-                                            "import",
-                                            {
-                                                ...formData.restrictionsAndProhibitions.restrictedGoods.import,
-                                                [key]: e.target.checked,
-                                            }
-                                        )
-                                    }
-                                    className="rounded border-gray-300 focus:ring-blue-500"
-                                />
-                                <span className="capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</span>
-                            </label>
-                        )
-                    )}
+  return (
+    <Card className="col-span-2">
+        <CardContent>
+        <div className="bg-orange-500 text-white p-4 rounded-md">
+            <h3 className="font-semibold text-lg">Customer Information Form</h3>
+            <p className="text-sm">Please fill in the following details to register a new customer.</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+           {/* Customer Information Section */}
+           <div className="col-span-3 p-4 rounded-md">
+                <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Customer Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium">Customer ID No</label>
+                        <input type="text" name="clientCode" placeholder="Enter Customer ID No" value={formData.customerId.clientCode} onChange={(e) => handleNestedChange(e, "customerId")} disabled/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">System Consecutive No.</label>
+                        <input type="text" name="consecutiveNo" value={formData.customerId.consecutiveNo} onChange={(e) => handleNestedChange(e, "customerId")} disabled />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Create Date</label>
+                        <input type="text" name="createDate" value={formData.customerId.createDate} onChange={(e) => handleNestedChange(e, "customerId")} disabled />                  
+                    </div>
                 </div>
             </div>
-            </CardContent>
-        </Card>       
-    );
-}
+            {/* Address Information Section */}
+            <div className="col-span-3 p-4 rounded-md">
+                <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Address Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium">Address Type</label>
+                        <input type="text" name="addressType" placeholder="Enter Address Type" value={formData.address.addressType} onChange={(e) => handleNestedChange(e, "address")} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">City</label>
+                        <input type="text" name="city" placeholder="Enter City" value={formData.address.city} onChange={(e) => handleNestedChange(e, "address")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Sub City</label>
+                        <input type="text" name="subCity" placeholder="Enter Sub City" value={formData.address.subCity} onChange={(e) => handleNestedChange(e, "address")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Woreda</label>
+                        <input type="text" name="woreda" placeholder="Enter Woreda" value={formData.address.woreda} onChange={(e) => handleNestedChange(e, "address")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Kebele</label>
+                        <input type="text" name="kebele" placeholder="Enter Kebele" value={formData.address.kebele} onChange={(e) => handleNestedChange(e, "address")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">House No.</label>
+                        <input type="text" name="houseNo" placeholder="Enter House No." value={formData.address.houseNo} onChange={(e) => handleNestedChange(e, "address")}/>
+                        </div>
+                    <div>
+                        <label className="block text-sm font-medium">E-mail Address</label>
+                        <input type="email" name="email" placeholder="Enter E-mail" value={formData.address.email} onChange={(e) => handleNestedChange(e, "address")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Fixed Tele Line No</label>
+                        <input type="tel" name="fixedLinePhone" placeholder="Enter Tele Line No" value={formData.address.fixedLinePhone} onChange={(e) => handleNestedChange(e, "address")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Mobile Phone No.</label>
+                        <input type="tel" name="mobilePhone" placeholder="Enter Mobile No." value={formData.address.mobilePhone} onChange={(e) => handleNestedChange(e, "address")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Location No.</label>
+                        <input type="text" name="locationNo" placeholder="Enter Location No." value={formData.address.locationNo} onChange={(e) => handleNestedChange(e, "address")}/>
+                    </div>
+                </div>
+            </div>
 
+            {/* Company Information Section */}
+            <div className="col-span-3 p-4 rounded-md">
+                <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Company Head Info.</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium">First Name</label>
+                        <input type="text" name="firstName" placeholder="Enter First Name" value={formData.companyHead.firstName} onChange={(e) => handleNestedChange(e, "companyHead")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Middle</label>
+                        <input type="text" name="name" placeholder="Enter Middle Name" value={formData.companyHead.name} onChange={(e) => handleNestedChange(e, "companyHead")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Last Name</label>
+                        <input type="text" name="lastName" placeholder="Enter Middle Name" value={formData.companyHead.lastName} onChange={(e) => handleNestedChange(e, "companyHead")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Email</label>
+                        <input type="email" name="email" placeholder="Enter Woreda" value={formData.companyHead.email} onChange={(e) => handleNestedChange(e, "companyHead")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Mobile Phone</label>
+                        <input type="text" name="mobilePhone" placeholder="Enter mobilePhone" value={formData.companyHead.mobilePhone} onChange={(e) => handleNestedChange(e, "companyHead")}/>
+                    </div>
+                  
+                </div>
+            </div>
+
+            {/* Company Information Section */}
+            <div className="col-span-3 p-4 rounded-md">
+                <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Company Owner Info.</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium">First Name</label>
+                        <input type="text" name="firstName" placeholder="Enter First Name" value={formData.companyOwner.firstName} onChange={(e) => handleNestedChange(e, "companyOwner")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Middle</label>
+                        <input type="text" name="name" placeholder="Enter Middle Name" value={formData.companyOwner.name} onChange={(e) => handleNestedChange(e, "companyOwner")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Last Name</label>
+                        <input type="text" name="lastName" placeholder="Enter Middle Name" value={formData.companyOwner.lastName} onChange={(e) => handleNestedChange(e, "companyOwner")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Email</label>
+                        <input type="email" name="email" placeholder="Enter Woreda" value={formData.companyOwner.email} onChange={(e) => handleNestedChange(e, "companyOwner")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Mobile Phone</label>
+                        <input type="text" name="mobilePhone" placeholder="Enter mobilePhone" value={formData.companyOwner.mobilePhone} onChange={(e) => handleNestedChange(e, "companyOwner")}/>
+                    </div>
+                  
+                </div>
+            </div>
+
+            {/* Contact Person Information */}
+            <div className="col-span-3 p-4 rounded-md">
+                <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Contact Person Info.</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium">First Name</label>
+                        <input type="text" name="firstName" placeholder="Enter First Name" value={formData.contactPerson.firstName} onChange={(e) => handleNestedChange(e, "contactPerson")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Middle</label>
+                        <input type="text" name="name" placeholder="Enter Middle Name" value={formData.contactPerson.name} onChange={(e) => handleNestedChange(e, "contactPerson")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Last Name</label>
+                        <input type="text" name="lastName" placeholder="Enter Middle Name" value={formData.contactPerson.lastName} onChange={(e) => handleNestedChange(e, "contactPerson")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Email</label>
+                        <input type="email" name="email" placeholder="Enter Woreda" value={formData.contactPerson.email} onChange={(e) => handleNestedChange(e, "contactPerson")}/>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Mobile Phone</label>
+                        <input type="text" name="mobilePhone" placeholder="Enter mobilePhone" value={formData.contactPerson.mobilePhone} onChange={(e) => handleNestedChange(e, "contactPerson")}/>
+                    </div>
+                  
+                </div>
+            </div>    
+
+            {/* Contact Person Information */}
+            <div className="col-span-3 p-4 rounded-md">
+                <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Contact Person Info.</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium">First Name</label>
+                        <input type="text" name="name" placeholder="Enter First Name" value={formData.name} onChange={handleChange} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Customer Type</label>
+                        <select type="select" name="customerType" value={formData.customerType} onChange={handleChange}>
+                            <option value="Individual">Individual</option>
+                            <option value="Company">Company</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Industry</label>
+                        <input type="text" name="industry" placeholder="Enter Industry Details" value={formData.industry} onChange={handleChange} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">"Customers Specialization</label>
+                        <input type="text" name="specializations" placeholder="Enter Specializations" value={formData.specializations} onChange={handleChange} />
+                    </div>                                      
+                </div>
+            </div>                                        
+          
+            {/* Submit Button */}
+            <div className="col-span-3 flex justify-end">
+                <button type="submit" className="bg-orange-500 text-white mr-3">Submit</button>
+                <button className="bg-blue-400 text-white ">Cancel</button>
+            </div>
+        </form>
+        </CardContent>
+  </Card>
+  );
+};
 
 function Card({ children, className }) {
     return <div className={`bg-white shadow rounded-lg p-4 ${className}`}>{children}</div>;
-  }
+}
     
-  function CardContent({ children }) {
+function CardContent({ children }) {
     return <div className="p-4">{children}</div>;
-  }
+}
+
+function Select({ label, options = [], className = "", ...props }) {
+    return (
+        <div className="flex flex-col">
+            {label && <label className="text-sm font-medium mb-1">{label}</label>}
+            <select
+                className={`p-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none ${className}`}
+                {...props}
+            >
+                {options.map((option, index) => (
+                <option key={index} value={option.value}>
+                    {option.label}
+                </option>
+                ))}
+            </select>
+        </div>
+    );
+}
+
+function Input({ label, type = "text", placeholder, className = "", ...props }) {
+    return (
+        <div className="flex flex-col">
+        {label && <label className="text-sm font-medium mb-1">{label}</label>}
+        <input
+            type={type}
+            placeholder={placeholder}
+            className={`p-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none ${className}`}
+            {...props}
+        />
+        </div>
+    );
+}
+  
+function Button({ type = "button", className = "", children, ...props }) {
+    return (
+        <button
+            type={type}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${className} bg-orange-500 hover:bg-orange-600 text-white`}
+            {...props}
+            >
+            {children}
+        </button>
+    );
+}
+  
+
+
+             

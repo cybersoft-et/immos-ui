@@ -7,7 +7,8 @@ export default function Home() {
       {/* Sidebar */}
       <Sidebar />
       {/* Main Content */}
-      <main className="flex-1 p-6">
+      {/* flex-1 p-6 bg-gray-100 ml-64 overflow-y-auto h-screen */}
+      <main className="flex-1 p-6 overflow-y-auto h-screen">
         <Outlet />        
       </main>
     </div>

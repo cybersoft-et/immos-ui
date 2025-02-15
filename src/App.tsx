@@ -5,7 +5,7 @@ import Signup from "./components/core/Signup";
 import Formcustomer from "./components/crm/formcustomer";
 import Home from "./components/crm/home";
 import Dashboard from "./components/crm/layout/dashboard";
-import FormCustomerManagment from "./components/crm/formcustomermag";
+import GridCustomers from "./components/crm/gridCustomer";
 
 const App = () => {
 
@@ -18,7 +18,10 @@ const App = () => {
         <Route path="/" element={<Home />}>
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="customerform" element={<Formcustomer /> } />   
-          <Route path="Customermanagment" element={<FormCustomerManagment /> } />              
+          {/* <Route path="Customermanagment" element={<FormCustomerManagment /> } />    */}
+          <Route path="customerform/:id" element={<Formcustomer /> } />    
+          <Route path="gridcustomers" element={<GridCustomers /> } />
+          <Route path="*" element={<h1>Not Found</h1>} />       
         </Route>              
       </Routes>
     </BrowserRouter>
