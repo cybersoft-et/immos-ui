@@ -35,7 +35,6 @@ const CustomersTable = () => {
       { headerName: "Client Code", field: "clientCode", flex: 1 },
       { headerName: "Customer Type", field: "customerType", flex: 1 },
       { headerName: "Contact Person ID", field: "industry", flex: 1 },
-      // { headerName: "Alternate Contact ID", field: "AlternateContactPersonId", flex: 1 },
       { headerName: "Address ID", field: "name", flex: 1 },
       {
         field: "actions",
