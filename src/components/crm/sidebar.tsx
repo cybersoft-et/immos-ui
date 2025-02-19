@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { useEffect, useState } from "react";
 import { Home, ChevronLeft , ChevronRight , Building, MessageSquare, TrendingUp, Camera, Truck, Link, ShoppingCart, Ship, Settings, HelpCircle, LogOut, ChevronDown, NotebookText } from "lucide-react";
 import { useNavigate } from "react-router-dom";

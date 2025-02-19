@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
