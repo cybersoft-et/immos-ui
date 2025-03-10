@@ -1,14 +1,16 @@
-// @ts-nocheck
-
 import axios from "axios";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { useMutation, useQuery } from "react-query";
+import { useMutation } from "react-query";
 import { CardContent } from "./layout/cardContent";
 import { Card } from "./layout/card";
 import Button  from "./ui/button";
 import React from "react";
 import { AgGridReact } from "ag-grid-react";
+import { Upload } from 'lucide-react';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrash } from "@fortawesome/free-solid-svg-icons/faTrash";
+import { faPenToSquare } from "@fortawesome/free-solid-svg-icons/faPenToSquare";
 
 const customerTypeOptions = [
     { value: 'Individual', label: 'Individual' },
@@ -27,79 +29,88 @@ interface InputProps {
 }
 
 interface IFormInput {
-    id: number
+    id: 0,
+    name: string,
+    customerType: 'Individual',
     customerId: {
-        clientCode: string
-        consecutiveNo: string
-        createDate: string
-    }
-    name: string
-    clientCode: string
-    customerType: 'Individual'
-    contactPersonId: number
-    alternateContactPersonId: number
-    contactPerson: {
-        id: number
-        firstName: string
-        lastName: string
-        name: string
-        email: string
-        mobilePhone: string
-    }
-    alternateContactPerson: {
-        id: number
-        firstName: string
-        lastName: string
-        name: string
-        email: string
-        mobilePhone: string
-    }
-    addressId: number
-    address: {
-        id: number
-        addressType: string
-        region: string
-        city: string
-        subCity: string
-        woreda: string
-        kebele: string
-        houseNo: string
-        email: string
-        fixedLinePhone: string
-        mobilePhone: string
-        locationNo: string
-    }
+      clientCode: string,
+      consecutiveNo: string,
+      createDate: string,      
+    },
+    payeeCustomer: {
+      id: 0,
+      name: string,
+      email: string,
+      telephoneNumber: string,
+      alternateTelephoneNumber: string
+    },
     companyHead: {
-        id: number
-        firstName: string
-        lastName: string
-        name: string
-        email: string
-        mobilePhone: string
-    }
+      id: 0,
+      name: string,
+      email: string,
+      telephoneNumber: string,
+      alternateTelephoneNumber: string
+    },
+    contactPersons: [
+      {
+        id: 0,
+        name: string,
+        email: string,
+        telephoneNumber: string,
+        alternateTelephoneNumber: string
+      }
+    ],
+    companyHeadId: 0,
+    companyOwnerId: 0,
     companyOwner: {
-        id: number
-        firstName: string
-        lastName: string
-        name: string
-        email: string
-        mobilePhone: string
-    }
-    industry: string
-    specializations: []
-    categoryId: number
-    subCategoryId: number
-    companyOwnerId: number
-    companyHeadId: number
+      id: 0,
+      name: string,
+      email: string,
+      telephoneNumber: string,
+      alternateTelephoneNumber: string
+    },
+    address: {
+      id: 0,
+      addressType: string,
+      region: string,
+      city: string,
+      subCity: string,
+      woreda: string,
+      kebele: string,
+      houseNo: string,
+      landmark: string
+    },
+    industry: string,
+    specializations: [
+      string
+    ],
+    categoryId: 0,
+    subCategoryId: 0,
+    payeeCustomerId: 0,
+    addressId: 0,
+    email: string,
+    telephoneNumber: string,
+    alternateTelephoneNumber: string,
+    documents: [
+      {
+        documentId: 0
+      }
+    ]
   }
 
 export default function FormCustomer() {
 
     const { register, handleSubmit, setValue } = useForm<IFormInput>();
-    const [searchText, setSearchText] = useState("");
-    const [deleteItem, setDeleteItem] = useState(null);
+    const [ deleteItem, setDeleteItem] = useState(null);
     const [ dataGrid , setData] = useState([]);
-    
+
+    const [customerOptions, setCustomerOptions] = useState([]);
+
+    const [selectedRow, setSelectedRow] = useState(null);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const gridRef = useRef(null);
+
     const mutation = useMutation(async (newCustomer) => {
         const response = await fetch("https://localhost:8000/api/core/Customers", {
             method: "POST",
@@ -109,24 +120,6 @@ export default function FormCustomer() {
         return response.json();
     });    
 
-    const { data  } = useQuery(["customerData"], async () => {
-        // const response = await axios.get("https://localhost:8000/api/core/Customers/ConsecutiveNumber");
-        const response = await axios.get(`https://localhost:8000/api/core/Customers/CustomerId?customerName=${newCustomer.name}`);
-        return response.data;
-    });
-
-
-    useEffect(() => {
-        const today = `CS-${new Date().getFullYear().toLocaleString().substr(-2)}${new Date().getMonth() + 1}${new Date().getDate()}`;
-        if (data) {
-            console.log('#Response ', data);
-            setValue("customerId.consecutiveNo", data  );
-            setValue("customerId.createDate", today);
-        }
-        
-    }, [data , setValue]);
-
-
     const onSubmit : SubmitHandler<IFormInput> = (formData) => {
         console.log('#form-data ', formData);
         mutation.mutate(formData);
@@ -135,37 +128,70 @@ export default function FormCustomer() {
     const handleBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
         const value = e.target.value;
         try {
-            const response = await axios.get(`https://localhost:8000/api/core/Customers/${value}`);
+            const response = await axios.get(`https://localhost:8000/api/core/Customers/CustomerId?customerName=${value}`);
+
             const data = response.data;
-            setValue("address.addressType", data.addressType);
-            setValue("address.region", data.region);
-            setValue("address.city", data.city);
+            setValue("customerId.clientCode", data.clientCode );
+            setValue("customerId.consecutiveNo", data.consecutiveNumber );
+            setValue("customerId.createDate", data.customerId);
         } catch (error) {
             console.error("Error fetching data:", error);
         }
     };
-    const Input = React.forwardRef<HTMLInputElement, InputProps>(({ label, type = "text", placeholder, className = "" , registerName , requiredState = "false" , ...props }, ref) => {
+
+    const Input = React.forwardRef<HTMLInputElement, InputProps>(({ label, type = "text", placeholder, className = "" , registerName , requiredState = "false" , hidden= false, ...props }, ref) => {
         return (
             <div className="flex flex-col">
-            {label && <label className="text-sm font-medium mb-1">{label}</label>}
-            <input
-                type={type}
-                ref={ref}
-                onBlur={props.onBlur}
-                onChange={props.onChange}
-                required={requiredState === "true" ? true : false}
-                placeholder={placeholder}
-                className={`p-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none ${className}`}
-                {...register(registerName)}
-                {...props}
-            />
+              {label && <label className="text-sm font-medium mb-1">{label}</label>}
+              <input
+                  type={type}
+                  ref={ref}
+                  onBlur={props.onBlur}
+                  onChange={props.onChange}
+                  hidden={hidden}
+                  required={requiredState === "true" ? true : false}
+                  placeholder={placeholder}
+                  className={`p-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none ${className}`}
+                  {...register(registerName)}
+                  {...props}
+              />
             </div>
         );
     });
+
     useEffect(() => {
+      const today = `PGL-${new Date().getFullYear().toLocaleString().substr(-2)}${new Date().getMonth() + 1}${new Date().getDate()}`;
+
         axios.get("https://localhost:8000/api/core/Customers")
             .then(response => setData(response.data))
             .catch(error => console.error("Error fetching data:", error));
+
+        const fetchCategoriesOptions = async () => {
+          try {
+            const response = await axios.get("https://localhost:8000/api/Lookups/CustomerCategories");
+            setCustomerOptions(response.data);
+          } catch (err) {
+            // setError("Failed to load options");
+          } finally {
+            // setLoading(false);
+          }
+        };
+
+        const fetchConsecutiveNumber = async () => {
+          try {
+            const response = await axios.get("https://localhost:8000/api/core/Customers/ConsecutiveNumber"); 
+            setValue('customerId.consecutiveNo', response.data);
+            setValue('customerId.createDate', today);
+          } catch (err) {
+            // setError("Failed to load options");
+          } finally {
+            // setLoading(false);
+          }
+        };
+        
+        fetchCategoriesOptions();
+        fetchConsecutiveNumber();
+
     }, []);
     
     const onDeleteConfirm = () => {
@@ -173,174 +199,264 @@ export default function FormCustomer() {
         setDeleteItem(null);
     };
 
-    const onGridReady = useCallback((params) => {
-        params.api.setQuickFilter(searchText);
-    }, [searchText]);
-
     const columnDefs = [
         { headerName: "ID", field: "customerId", flex: 1 },
         { headerName: "Name", field: "name", flex: 1 },
         { headerName: "Phone Num.", field: "clientCode", flex: 1 },
         { headerName: "Customer Type", field: "customerType", flex: 1 },
         { headerName: "Contact Person ID", field: "industry", flex: 1 },
-        // { headerName: "Alternate Contact ID", field: "AlternateContactPersonId", flex: 1 },
-        { headerName: "Address ID", field: "name", flex: 1 },
         {
         field: "actions",
         headerName: "Actions",
         cellRenderer: (params) => (
             <div className="flex gap-2">
-            <Button variant="outline" className=" bg-orange-500  hover:bg-orange-600" onClick={() => navigate(`/edit/${params.data.id}`)}>Edit</Button>
-            <Button variant="destructive" className="bg-blue-500  hover:bg-blue-600" onClick={() => setDeleteItem(params.data)}>Delete</Button>
+              <Button className="sm:rounded bg-orange-500 hover:bg-orange-600" onClick={() => handleEdit(params.data)} size="sm"><FontAwesomeIcon icon={faPenToSquare} /></Button>
+              <Button className="btn-sm sm:rounded-lg bg-blue-500 hover:bg-blue-600" onClick={() => handleDelete(params.data)} size="sm" variant="destructive"><FontAwesomeIcon icon={faTrash} /></Button>
             </div>
         ),
+        width: 200,
         sortable: false,
         filter: false,
         },
     ];
+
+    // MOCK DATA FOR CONTACT PERSON
+    const [rowData, setRowData] = useState([
+        { customerId : '01' , name: "Abebe", clientCode: "001", customerType: 64950, industry: 'Individual' },
+        { customerId : '02' , name: "Ayele", clientCode: "002", customerType: 33850, industry: 'Company' },
+        { customerId : '03' , name: "Fuad", clientCode: "003", customerType: 29600, industry: 'Individual' },
+    ]);   
+
+    useEffect(() => {
+        if (gridRef.current) {
+            // gridRef.current.api.sizeColumnsToFit();
+        }
+    }, [rowData]);
+
+    const handleEdit = (data) => {
+      setSelectedRow({ ...data });
+      setEditDialogOpen(true);
+    };
+
+    const handleDelete = (data) => {
+        setSelectedRow(data);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleEditChange = (e) => {
+        const { name, value } = e.target;
+        setSelectedRow(prev => ({ ...prev, [name]: value }));
+    };
+
+    const saveEdit = () => {
+        setRowData(rowData.map(row => row.customerId === selectedRow.customerId ? selectedRow : row));
+        setEditDialogOpen(false);
+    };
+
+    const confirmDelete = () => {
+        setRowData(rowData.filter(row => row.customerId !== selectedRow.customerId));
+        setDeleteDialogOpen(false);
+    };
+
+
+    const Dialog = ({ open, onOpenChange, children }) => {
+      if (!open) return null;
+      
+      return (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            {children}
+          </div>
+        </div>
+      );
+    };
     
+    const DialogTrigger = ({ children, onClick }) => {
+      return <div onClick={onClick}>{children}</div>;
+    };
+    
+     const DialogContent = ({ children }) => {
+      return <div className="mt-4">{children}</div>;
+    };
+    
+     const DialogTitle = ({ children }) => {
+      return <h2 className="text-lg font-semibold">{children}</h2>;
+    };
+    
+     const DialogFooter = ({ children }) => {
+      return <div className="mt-4 flex justify-end gap-2">{children}</div>;
+    };
+  
 
   return (
-    <Card className="col-span-2">
-        <CardContent>
-        <div className="bg-orange-500 text-white p-4 rounded-md">
-            <h3 className="font-semibold text-lg">Customer Information Form</h3>
-            <p className="text-sm">Please fill in the following details to register a new customer.</p>
-        </div>
-        <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-              {/* Customer Information Section */}
-              <div className="col-span-3  p-4 rounded-md">
-                <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Customer Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">             
-                    <Input label="Client Code" registerName="customerId.clientCode" requiredState="false" disabled />
-                    <Input label="System Consecutive No." registerName="customerId.consecutiveNo" requiredState="false" disabled/>
-                    <Input label="ID Date" registerName="customerId.createDate" requiredState="false"  disabled/>
-                </div>
+    <div >
+      <div className="bg-orange-500 text-white p-4 rounded-md">
+          <h3 className="font-semibold text-lg">Customer Information Form</h3>
+          <p className="text-sm">Please fill in the following details to register a new customer.</p>
+      </div> 
+      <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-3 gap-2 p-3">
+        <div className="col-span-2">
+        <Card>
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">                  
+            <div className="col-span-3  p-4 rounded-md">
+              <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Customer Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 m-4">             
+                  {/* <Input label="System Id" registerName="id" requiredState="false" disabled /> */}
+                  {/* <Input label="System Category ID." registerName="categoryId" requiredState="false" disabled/> */}
+                  {/* <Input label="System SubCategory ID" registerName="subCategoryId" requiredState="false"  disabled/> */}
+
+                  <Select label="Customer Categories" options={customerOptions} registerName="customerType" requiredState="false" />                                                                                
               </div>
+            </div>
 
-              {/* Commercial Personnel Section */}
-              <div className="col-span-3  p-4 rounded-md">
-                <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Recording Commercial Personnel</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input  label="Name"  placeholder="Enter Name"  registerName="name" requiredState="false" {...register("name")} onBlur={handleBlur} onChange={onchange}/>
-                    <Select label="Customer Type"  options={customerTypeOptions} registerName="customerType" requiredState="false" />                                            
-                    <Input  label="Industry"   placeholder="Enter Industry Details" registerName="industry" requiredState="false" />
-                    <Input  label="Customers Specialization"  placeholder="Enter Specializations" registerName="specializations" requiredState="false"  />
-                </div>
-              </div>    
+            <div className="col-span-3 p-4 rounded-md">
+              <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Customer Details</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 m-4">
+                  {/* <Input label="AdressID" registerName="addressId" requiredState="false" hidden={true}/> */}
+                  <Input label="Full Name *" className="col-span-2" placeholder="Enter Full Name"  registerName="name" requiredState="false" onBlur={handleBlur}/>
+                  <Input type="email" label="E-Mail" placeholder="Enter E-Mail" registerName="email" requiredState="false" />
+                  <Input type="tel" label="Phone No." placeholder="Enter Phone No." registerName="telephoneNumber" requiredState="false" />
+                  <Input type="tel" label="Alternate Phone No." placeholder="Enter Alternate Phone No." registerName="alternateTelephoneNumber" requiredState="false" />
+                  <Select label="Customer Type" options={customerTypeOptions} registerName="customerType" requiredState="false" />                                                                
+                  <Input  label="Industry" placeholder="Enter Industry Details" registerName="industry" requiredState="false" />
+                  <Input  type="textarea"  label="Customers Specialization"  placeholder="Enter Specializations" registerName="specializations" requiredState="false"  />
+              </div>
+            </div>    
 
-              <div className="col-span-5 p-4 rounded-md">
-                <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Contact Person Tables</h4>
-                {/* <Input  label="Name"  placeholder="Enter Name"  registerName="name" requiredState="false" {...register("name")} onBlur={handleBlur} onChange={onchange}/> */}
-
-                <input
-                    type="text"
-                    placeholder="Search Contacts ..."
-                    value={searchText}
-                    onChange={(e) => setSearchText(e.target.value)}
-                    className="mb-4 p-2 border rounded w-full"
-                />
-                <div className="ag-theme-alpine w-full h-[500px]">
-                    <AgGridReact
-                        columnDefs={columnDefs}
-                        rowData={dataGrid}
-                        pagination={true}
-                        domLayout='autoHeight'
-                        onGridReady={onGridReady}
-                        />
-                </div>
-                {deleteItem && (
-                    <Dialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
+            <div className="col-span-5 p-4 rounded-md">
+              <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Contact Person Tables</h4>                
+              <div className="ag-theme-alpine w-full h-[300px] m-4">
+                  <AgGridReact
+                      ref={gridRef}
+                      rowData={rowData}
+                      columnDefs={columnDefs}
+                      domLayout='autoHeight'
+                      pagination={false}                        
+                      />
+              </div>
+               {/* Edit Dialog */}
+               <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
                     <DialogContent>
-                        <DialogHeader>
-                        <DialogTitle>Confirm Delete</DialogTitle>
-                        </DialogHeader>
-                        <p>Are you sure you want to delete {deleteItem.name}?</p>
+                        <DialogTitle>Edit Customer Contact </DialogTitle>
+                        <div className="space-y-2">
+                            <input type="text" name="name" value={selectedRow?.name || ''} onChange={handleEditChange} className="w-full p-2 border rounded" placeholder="Name" />
+                            <input type="text" name="clientCode" value={selectedRow?.clientCode || ''} onChange={handleEditChange} className="w-full p-2 border rounded" placeholder="Client Code" />
+                            <input type="number" name="customerType" value={selectedRow?.customerType || ''} onChange={handleEditChange} className="w-full p-2 border rounded" placeholder="Customer Type" />
+                            <input type="text" name="industry" value={selectedRow?.industry || ''} onChange={handleEditChange} className="w-full p-2 border rounded" placeholder="Industry" />
+                        </div>
                         <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeleteItem(null)}>Cancel</Button>
-                        <Button variant="destructive" onClick={onDeleteConfirm}>Delete</Button>
+                            <Button className="bg-orange-500 text-white mr-3" onClick={saveEdit}>Save</Button>
+                            <Button className="bg-blue-500 text-white mr-3" onClick={() => setEditDialogOpen(false)} variant="secondary">Cancel</Button>
                         </DialogFooter>
                     </DialogContent>
-                    </Dialog>
-                )}
-                </div>                                       
+                </Dialog>
+                
+                {/* Delete Confirmation Dialog */}
+                <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                    <DialogContent>
+                        <DialogTitle>Confirm Delete</DialogTitle>
+                        <p>Are you sure you want to delete {selectedRow?.name}?</p>
+                        <DialogFooter>
+                            <Button className="bg-blue-500 text-white mr-3" onClick={() => setDeleteDialogOpen(false)} variant="secondary">No</Button>
+                            <Button className="bg-orange-500 text-white mr-3" onClick={confirmDelete} variant="destructive">Yes</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>                                       
 
-               {/* Address Information Section */}
-               <div className="col-span-3  p-4 rounded-md">
-                <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Address Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Input  label="Address Type"  placeholder="Enter Address"  registerName="address.addressType" requiredState="false"   />                 
-                  <Input  label="Region"  placeholder="Enter Region"   registerName="address.city" requiredState="false"  />
-                  <Input  label="city"  placeholder="Enter City" registerName="address.region" requiredState="false"  />
-                  <Input  label="subCity"  placeholder="Enter Sub City" registerName="address.subCity" requiredState="false"  />
-                  <Input  label="woreda"  placeholder="Enter Woreda" registerName="address.woreda" requiredState="false" />
-                  <Input  label="kebele"  placeholder="Enter Kebele" registerName="address.kebele" requiredState="false"/>
-                  <Input  label="houseNo"  placeholder="Enter House No." registerName="address.houseNo" requiredState="false"  />
-                  <Input type="email" label="email" placeholder="Enter E-mail" registerName="address.email" requiredState="false" />
-                  <Input type="tel" label="fixedLinePhone"  placeholder="Enter Tele Line No" registerName="address.fixedLinePhone" requiredState="false"  />
-                  <Input type="tel" label="mobilePhone"  placeholder="Enter Mobile No." registerName="address.mobilePhone" requiredState="false" />
-                  <Input  label="locationNo"  placeholder="Enter Location No." registerName="address.locationNo" requiredState="false"/>                  
-                </div>
+            <div className="col-span-3 p-4 rounded-md">
+              <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Address Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 m-4">                    
+                  {/* <Input label="ID"  placeholder="Enter ID" registerName="address.id" requiredState="false"   />                  */}
+                  <Input label="Address Type"  placeholder="Enter Address Type" registerName="address.addressType" requiredState="false"   />                 
+                  <Input label="Region"  placeholder="Enter Region" registerName="address.city" requiredState="false"  />
+                  <Input label="city"  placeholder="Enter City" registerName="address.region" requiredState="false"  />
+                  <Input label="subCity"  placeholder="Enter Sub City" registerName="address.subCity" requiredState="false"  />
+                  <Input label="woreda"  placeholder="Enter Woreda" registerName="address.woreda" requiredState="false" />
+                  <Input label="kebele"  placeholder="Enter Kebele" registerName="address.kebele" requiredState="false"/>
+                  <Input label="houseNo"  placeholder="Enter House No." registerName="address.houseNo" requiredState="false"  />
+                  <Input label="LandMark" placeholder="Enter landmark" registerName="address.landmark" requiredState="false" />
               </div>
-              
-              {/* Company Head Information Section */}
-              <div className="col-span-3  p-4 rounded-md">
-                <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Company Head Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* <Input  label="First Name"  placeholder="Enter First Name" registerName="companyHead.firstName" requiredState="false"  />
-                    <Input  label="Middle Name"  placeholder="Enter Middle Name" registerName="companyHead.name" requiredState="false" /> */}
-                    <Input  label="Full Name"  placeholder="Enter Full Name" registerName="companyHead.lastName" requiredState="false" />
-                    <Input type="email" label="Email"  placeholder="Enter Email" registerName="companyHead.email" requiredState="false" />
-                    <Input  label="Mobile Phone"  placeholder="Enter mobilePhone" registerName="companyHead.mobilePhone" requiredState="false" />                                 
-                </div>
-              </div>
+            </div>
 
-              {/* Company Owner Information Section */}
-              <div className="col-span-3  p-4 rounded-md">
-                <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Company Owner Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* <Input  label="First Name"  placeholder="Enter First Name" registerName="companyOwner.firstName" requiredState="false" />
-                    <Input  label="Middle Name"  placeholder="Enter Middle Name" registerName="companyOwner.name" requiredState="false"  /> */}
-                    <Input  label="Full Name" placeholder="Enter Full Name" registerName="companyOwner.lastName" requiredState="false"/>
-                    <Input type="email" label="Email" placeholder="Enter Email" registerName="companyOwner.email" requiredState="false" />
-                    <Input  label="Mobile Phone"  placeholder="Enter mobilePhone" registerName="companyOwner.mobilePhone" requiredState="false"  />                                 
-                </div>
+            <div className="col-span-3 p-4 rounded-md">
+              <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Payee Customer</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 m-4">              
+                  {/* <Input label="Payee Customer ID"  placeholder="Enter Payee Customer ID" registerName="payeeCustomerId" requiredState="false" /> */}
+                  <Input label="Full Name"  placeholder="Enter Full Name" registerName="payeeCustomer.name" requiredState="false" />
+                  <Input type="email" label="Email"  placeholder="Enter Email" registerName="payeeCustomer.email" requiredState="false" />
+                  <Input label="Mobile Phone No."  placeholder="Enter Mobile Phone" registerName="payeeCustomer.telephoneNumber" requiredState="false" />  
+                  <Input label="Alternate Phone No."  placeholder="Enter Alternate Phone" registerName="payeeCustomer.alternateTelephoneNumber" requiredState="false" />                                                                
               </div>
+            </div>
+                
+            <div className="col-span-3 p-4 rounded-md">
+              <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Company Head Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 m-4">
+                  {/* <Input label="company Head Id" placeholder="Enter Company Head Id" registerName="companyHeadId" requiredState="false"/>                   */}
+                  <Input label="Full Name"  placeholder="Enter Full Name" registerName="companyHead.name" requiredState="false" />
+                  <Input type="email" label="Email" placeholder="Enter Email" registerName="companyHead.email" requiredState="false" />
+                  <Input label="Mobile Phone"  placeholder="Enter mobilePhone" registerName="companyHead.mobilePhone" requiredState="false" /> 
+                  <Input label="Alternate Phone No."  placeholder="Enter Alternate Phone" registerName="companyHead.alternateTelephoneNumber" requiredState="false" />                                                                                                
+              </div>
+            </div>
 
-               {/* Company Contact Person Section */}
-               <div className="col-span-3  p-4 rounded-md">
-                <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Contact Person Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* <Input  label="First Name"  placeholder="Enter First Name" registerName="customerId.firstName" requiredState="false"  />
-                    <Input  label="Middle Name"  placeholder="Enter Middle Name" registerName="customerId.name" requiredState="false" /> */}
-                    <Input  label="Full Name"  placeholder="Enter Full Name" registerName="customerId.lastName" requiredState="false"/>
-                    <Input type="email" label="Email"  placeholder="Enter Email" registerName="customerId.email" requiredState="false" />
-                    <Input  label="Mobile Phone"  placeholder="Enter mobilePhone" registerName="customerId.mobilePhone" requiredState="false" />                                 
-                </div>
+            <div className="col-span-3 p-4 rounded-md">
+              <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Company Owner Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 m-4"> 
+                  {/* <Input label="company Owner Id" placeholder="Enter Company OwnerId" registerName="companyOwnerId" requiredState="false"/>                   */}
+                  <Input label="Full Name" placeholder="Enter Full Name" registerName="companyOwner.name" requiredState="false"/>
+                  <Input type="email" label="Email" placeholder="Enter Email" registerName="companyOwner.email" requiredState="false" />
+                  <Input label="Mobile Phone"  placeholder="Enter mobilePhone" registerName="companyOwner.mobilePhone" requiredState="false" />
+                  <Input label="Alternate Phone No."  placeholder="Enter Alternate Phone" registerName="companyHead.alternateTelephoneNumber" requiredState="false" />                                                                                                                                 
               </div>
+            </div>
 
-              
-               {/* Company Contact Person Section */}
-               <div className="col-span-3  p-4 rounded-md">
-                <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Alternate Contact Person Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* <Input  label="First Name"  placeholder="Enter First Name" registerName="alternateContactPerson.firstName" requiredState="false"  />
-                    <Input  label="Middle Name"  placeholder="Enter Middle Name" registerName="alternateContactPerson.name" requiredState="false" /> */}
-                    <Input  label="Full Name"  placeholder="Enter Full Name" registerName="alternateContactPerson.lastName" requiredState="false"/>
-                    <Input type="email" label="Email"  placeholder="Enter Email" registerName="alternateContactPerson.email" requiredState="false"  />
-                    <Input  label="Mobile Phone"  placeholder="Enter mobilePhone" registerName="alternateContactPerson.mobilePhone" requiredState="false"  />                                 
-                </div>
+            <div className="col-span-3 p-4 rounded-md">
+              <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Contact Person Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 m-4">                    
+                  {/* <Input label="CustomerID"  placeholder="Enter CustomerId" registerName="customerId.name" requiredState="false" /> */}
+                  <Input label="Full Name"  placeholder="Enter Full Name" registerName="customerId.name" requiredState="false"/>
+                  <Input type="email" label="Email"  placeholder="Enter Email" registerName="customerId.email" requiredState="false" />
+                  <Input label="Mobile Phone"  placeholder="Enter mobilePhone" registerName="customerId.mobilePhone" requiredState="false" />
+                  <Input label="Alternate Phone No."  placeholder="Enter Alternate Phone" registerName="companyHead.alternateTelephoneNumber" requiredState="false" />                                                                                                                                                                  
               </div>
-              
-              
-              {/* Submit Button */}
-              <div className="col-span-3 flex justify-end">
-                <Button type="submit" className="bg-orange-500 text-white mr-3" >Submit</Button>
-                <Button type="button" className="bg-blue-400 text-white">Cancel</Button>
-              </div>
-            </form>
+            </div>                         
+            
+            <div className="col-span-3 flex justify-end">
+              <Button type="submit" className="bg-orange-500 text-white mr-3" >Submit</Button>
+              <Button type="button" className="bg-blue-400 text-white">Cancel</Button>
+            </div>
+          
         </CardContent>
-    </Card>
+      </Card>
+      </div>
+      
+      <div className="col-span-1">
+       {/* Right Side with Grids, File Uploads, and Top Inputs */}
+        {/* Top Inputs */}
+        <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Generated Inputs:</h4>                
+        <div className="grid grid-cols-3 gap-2 m-4">         
+          <Input label="Client Code" registerName="customerId.clientCode" requiredState="false" disabled />
+          <Input label="Consecutive No." registerName="customerId.consecutiveNo" requiredState="false" disabled/>
+          <Input label="ID Date" registerName="customerId.createDate" requiredState="false"  disabled/>
+        </div>
+
+        <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md mt-2">Documents To Upload:</h4>                
+        {/* File Uploads */}
+        <Card className="col-span-2">
+          <CardContent className="p-4 space-y-4">
+            <div className="flex items-center justify-between border rounded-lg p-4">
+              <span>Upload Documents</span>
+              <Button variant="outline">
+                <Upload className="w-4 h-4 mr-2" /> Upload
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      </form>
+    </div>
   );
 };
 
@@ -349,20 +465,25 @@ function Select({ label, options = [], className = "" , registerName="", require
         <div className="flex flex-col">
             {label && <label className="text-sm font-medium mb-1">{label}</label>}
             <select
-                name={registerName}
+                name={registerName}               
                 required={requiredState === "true" ? true : false}
                 className={`p-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none ${className}`}
                 {...props}
             >
                 {options.map((option, index) => (
-                <option key={index} value={option.value}>
-                    {option.label}
+                <option key={index} value={option.categoryName}>
+                    {option.categoryName}
                 </option>
                 ))}
             </select>
         </div>
     );
 }
+
+
+
+
+
 
 
   

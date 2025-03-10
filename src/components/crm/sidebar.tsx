@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 import { useEffect, useState } from "react";
-import { Home, ChevronLeft , ChevronRight , Building, MessageSquare, TrendingUp, Camera, Truck, Link, ShoppingCart, Ship, Settings, HelpCircle, LogOut, ChevronDown, NotebookText } from "lucide-react";
+import { Home, ChevronLeft , ChevronRight , Building, MessageSquare, TrendingUp, Truck, Link, ShoppingCart, Ship, Settings, HelpCircle, LogOut, ChevronDown, NotebookText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const menuItems = [
@@ -16,7 +16,6 @@ const menuItems = [
   },
   { name: "Orders", icon: <ShoppingCart size={20}/>, key: "orders" },
   { name: "Messages", icon: <MessageSquare size={20}/>, key: "messages" },
-  { name: "Camera", icon: <Camera size={20}/>, key: "camera" },
   { name: "Logistics", icon: <Truck size={20}/>, key: "logistics" },
   { name: "Integration", icon: <Link size={20}/>, key: "integration" },
   { name: "Analytics", icon: <TrendingUp size={20}/>, key: "analytics" },
