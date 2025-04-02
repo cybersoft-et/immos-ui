@@ -7,14 +7,17 @@ import { Card } from "./layout/card";
 import Button  from "./ui/button";
 import React from "react";
 import { AgGridReact } from "ag-grid-react";
-import { Upload } from 'lucide-react';
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons/faTrash";
 import { faPenToSquare } from "@fortawesome/free-solid-svg-icons/faPenToSquare";
+// import FormDocumentUpload from "./formDocumentUpload";
+import { useParams } from "react-router-dom";
 
 const customerTypeOptions = [
-    { value: 'Individual', label: 'Individual' },
-    { value: 'Company', label: 'Company' },
+    { categoryName: 'Individual', label: 'Individual' },
+    { categoryName: 'Company', label: 'Company' },
 ];
 
 interface InputProps {
@@ -32,11 +35,6 @@ interface IFormInput {
     id: 0,
     name: string,
     customerType: 'Individual',
-    customerId: {
-      clientCode: string,
-      consecutiveNo: string,
-      createDate: string,      
-    },
     payeeCustomer: {
       id: 0,
       name: string,
@@ -95,197 +93,260 @@ interface IFormInput {
       {
         documentId: 0
       }
-    ]
+    ],
+    clientCode: string,
+    consecutiveNo: string,
+    createDate: string, 
   }
 
 export default function FormCustomer() {
 
-    const { register, handleSubmit, setValue } = useForm<IFormInput>();
-    const [ deleteItem, setDeleteItem] = useState(null);
-    const [ dataGrid , setData] = useState([]);
+  const {id } = useParams<{id: string}>();
+  const editId = id?.replace(":", "");
 
-    const [customerOptions, setCustomerOptions] = useState([]);
+  const isEditing = editId !== "new";
 
-    const [selectedRow, setSelectedRow] = useState(null);
-    const [editDialogOpen, setEditDialogOpen] = useState(false);
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const gridRef = useRef(null);
+  console.log('#FORM - EDIT ID: ', isEditing , ': ID ' , editId);
 
-    const mutation = useMutation(async (newCustomer) => {
-        const response = await fetch("https://localhost:8000/api/core/Customers", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(newCustomer),
-        });
-        return response.json();
-    });    
+  const { register, handleSubmit, setValue } = useForm<IFormInput>();
+  const [ deleteItem, setDeleteItem] = useState(null);
+  const [ dataGrid , setData] = useState([]);
 
-    const onSubmit : SubmitHandler<IFormInput> = (formData) => {
-        console.log('#form-data ', formData);
-        mutation.mutate(formData);
-    };
+  const [customerOptions, setCustomerOptions] = useState([]);
 
-    const handleBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        try {
-            const response = await axios.get(`https://localhost:8000/api/core/Customers/CustomerId?customerName=${value}`);
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [newContactDialogOpen, setNewContactDialogOpen] = useState(false);
+  const [newContact, setNewContact] = useState({ name: "", email: "", telephoneNumber: "", alternateTelephoneNumber: "" });
 
-            const data = response.data;
-            setValue("customerId.clientCode", data.clientCode );
-            setValue("customerId.consecutiveNo", data.consecutiveNumber );
-            setValue("customerId.createDate", data.customerId);
-        } catch (error) {
-            console.error("Error fetching data:", error);
-        }
-    };
+  const gridRef = useRef(null);
 
-    const Input = React.forwardRef<HTMLInputElement, InputProps>(({ label, type = "text", placeholder, className = "" , registerName , requiredState = "false" , hidden= false, ...props }, ref) => {
-        return (
-            <div className="flex flex-col">
-              {label && <label className="text-sm font-medium mb-1">{label}</label>}
-              <input
-                  type={type}
-                  ref={ref}
-                  onBlur={props.onBlur}
-                  onChange={props.onChange}
-                  hidden={hidden}
-                  required={requiredState === "true" ? true : false}
-                  placeholder={placeholder}
-                  className={`p-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none ${className}`}
-                  {...register(registerName)}
-                  {...props}
-              />
-            </div>
-        );
+  const mutation = useMutation(async (newCustomer) => {
+    const url = isEditing
+      ? `https://localhost:8000/api/core/Customers/${editId}`
+      : "https://localhost:8000/api/core/Customers";
+    const method = isEditing ? "PUT" : "POST";
+
+    const response = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newCustomer),
     });
 
-    useEffect(() => {
-      const today = `PGL-${new Date().getFullYear().toLocaleString().substr(-2)}${new Date().getMonth() + 1}${new Date().getDate()}`;
+    return response.json();
+  });
 
-        axios.get("https://localhost:8000/api/core/Customers")
-            .then(response => setData(response.data))
-            .catch(error => console.error("Error fetching data:", error));
 
-        const fetchCategoriesOptions = async () => {
-          try {
-            const response = await axios.get("https://localhost:8000/api/Lookups/CustomerCategories");
-            setCustomerOptions(response.data);
-          } catch (err) {
-            // setError("Failed to load options");
-          } finally {
-            // setLoading(false);
-          }
-        };
+  const onSubmit : SubmitHandler<IFormInput> = (formData) => {
+      
+      delete formData.customerId;
+      formData.specializations = formData.specializations?.split(',');
+      formData.contactPersons = rowData?.map((contact) => ({
+        id: contact.id,
+        name: contact.name,
+        email: contact.email,
+        telephoneNumber: contact.telephoneNumber,
+        alternateTelephoneNumber: contact.alternateTelephoneNumber
+      }));
+      isEditing ? formData.id = editId  :  formData.id = 0 ; 
 
-        const fetchConsecutiveNumber = async () => {
-          try {
-            const response = await axios.get("https://localhost:8000/api/core/Customers/ConsecutiveNumber"); 
-            setValue('customerId.consecutiveNo', response.data);
-            setValue('customerId.createDate', today);
-          } catch (err) {
-            // setError("Failed to load options");
-          } finally {
-            // setLoading(false);
-          }
-        };
-        
-        fetchCategoriesOptions();
-        fetchConsecutiveNumber();
+      console.log('#form-data ', formData);
+      console.log('#form-data - contactPersons ', formData.contactPersons);
+      mutation.mutate(formData);
+  };
 
-    }, []);
-    
-    const onDeleteConfirm = () => {
-        console.log("Deleting item:", deleteItem);
-        setDeleteItem(null);
-    };
+  const handleBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      try {
+          const response = await axios.get(`https://localhost:8000/api/core/Customers/CustomerId?customerName=${value}`);
 
-    const columnDefs = [
-        { headerName: "ID", field: "customerId", flex: 1 },
-        { headerName: "Name", field: "name", flex: 1 },
-        { headerName: "Phone Num.", field: "clientCode", flex: 1 },
-        { headerName: "Customer Type", field: "customerType", flex: 1 },
-        { headerName: "Contact Person ID", field: "industry", flex: 1 },
-        {
-        field: "actions",
-        headerName: "Actions",
-        cellRenderer: (params) => (
-            <div className="flex gap-2">
-              <Button className="sm:rounded bg-orange-500 hover:bg-orange-600" onClick={() => handleEdit(params.data)} size="sm"><FontAwesomeIcon icon={faPenToSquare} /></Button>
-              <Button className="btn-sm sm:rounded-lg bg-blue-500 hover:bg-blue-600" onClick={() => handleDelete(params.data)} size="sm" variant="destructive"><FontAwesomeIcon icon={faTrash} /></Button>
-            </div>
-        ),
-        width: 200,
-        sortable: false,
-        filter: false,
-        },
-    ];
+          const data = response.data;
+          setValue("clientCode", data.clientCode );
+          setValue("consecutiveNo", data.consecutiveNumber );
+          setValue("createDate", data.customerId);
+      } catch (error) {
+          console.error("Error fetching data:", error);
+      }
+  };
 
-    // MOCK DATA FOR CONTACT PERSON
-    const [rowData, setRowData] = useState([
-        { customerId : '01' , name: "Abebe", clientCode: "001", customerType: 64950, industry: 'Individual' },
-        { customerId : '02' , name: "Ayele", clientCode: "002", customerType: 33850, industry: 'Company' },
-        { customerId : '03' , name: "Fuad", clientCode: "003", customerType: 29600, industry: 'Individual' },
-    ]);   
+  const Input = React.forwardRef<HTMLInputElement, InputProps>(({ label, type = "text", placeholder, className = "" , registerName , requiredState = "false" , hidden= false, ...props }, ref) => {
+      return (
+          <div className="flex flex-col">
+            {label && <label className="text-sm font-medium mb-1">{label}</label>}
+            <input
+                type={type}
+                ref={ref}
+                onBlur={props.onBlur}
+                onChange={props.onChange}
+                hidden={hidden}
+                required={requiredState === "true" ? true : false}
+                placeholder={placeholder}
+                className={`p-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none ${className}`}
+                {...register(registerName)}
+                {...props}
+            />
+          </div>
+      );
+  });
 
-    useEffect(() => {
-        if (gridRef.current) {
-            // gridRef.current.api.sizeColumnsToFit();
+  useEffect(() => {
+    const today = `PGL-${new Date().getFullYear().toLocaleString().substr(-2)}${new Date().getMonth() + 1}${new Date().getDate()}`;
+
+      axios.get("https://localhost:8000/api/core/Customers")
+          .then(response => setData(response.data))
+          .catch(error => console.error("Error fetching data:", error));
+
+      const fetchCategoriesOptions = async () => {
+        try {
+          const response = await axios.get("https://localhost:8000/api/Lookups/CustomerCategories");
+          setCustomerOptions(response.data);
+        } catch (err) {
+          // setError("Failed to load options");
+        } finally {
+          // setLoading(false);
         }
-    }, [rowData]);
+      };
 
-    const handleEdit = (data) => {
+      const fetchConsecutiveNumber = async () => {
+        try {
+          const response = await axios.get("https://localhost:8000/api/core/Customers/ConsecutiveNumber"); 
+          setValue('consecutiveNo', response.data);
+          setValue('createDate', today);
+        } catch (err) {
+          // setError("Failed to load options");
+        } finally {
+          // setLoading(false);
+        }
+      };
+      
+      fetchCategoriesOptions();
+      fetchConsecutiveNumber();
+
+  }, [!isEditing]);
+
+  useEffect(() => {
+    if (!isNaN(Number(id))) {
+        // Fetch customer data for editing
+        axios.get(`https://localhost:8000/api/core/Customers/${id}`)
+            .then(response => {
+                const customerData = response.data;
+                // Populate form fields with customer data
+                Object.keys(customerData).forEach(key => {
+                    setValue(key as keyof IFormInput, customerData[key]);
+                });
+            })
+            .catch(error => console.error("Error fetching customer data:", error));
+      }
+  }, [isEditing]);
+  
+  const onDeleteConfirm = () => {
+      console.log("Deleting item:", deleteItem);
+      setDeleteItem(null);
+  };
+
+  const onGridReady = (params) => {
+    // this.gridApi = params.api;
+    // this.gridColumnApi = params.columnApi;   
+    // params.api.sizeColumnsToFit();
+  }
+
+  const columnDefs = [
+      { field: "id", headerName: "ID", width: 100 },
+      { field: "name", headerName: "Name", width: 150 },
+      { field: "email", headerName: "Email", width: 200 },
+      { field: "telephoneNumber", headerName: "Telephone", width: 150 },
+      { field: "alternateTelephoneNumber", headerName: "Alternate Telephone", width: 180 },
+        {
+      field: "actions",
+      headerName: "Actions",
+      cellRenderer: (params) => (
+          <div className="flex gap-2">
+            <Button className="sm:rounded bg-orange-500 hover:bg-orange-600" onClick={() => handleEdit(params.data)} size="sm"><FontAwesomeIcon icon={faPenToSquare} /></Button>
+            <Button className="sm:rounded bg-blue-500 hover:bg-blue-700" onClick={() => handleDelete(params.data)} size="sm" variant="destructive"><FontAwesomeIcon icon={faTrash} /></Button>
+          </div>
+      ),
+      width: 200,
+      sortable: false,
+      filter: false,
+      },
+  ];
+
+  // MOCK DATA FOR CONTACT PERSON   
+  const [rowData, setRowData] = useState([
+      { id: 1, name: "Abebe", email: "abebe@example.com", telephoneNumber: "123456789", alternateTelephoneNumber: "987654321" },
+      { id: 2, name: "Ayele", email: "ayele@example.com", telephoneNumber: "987654321", alternateTelephoneNumber: "123456789" },
+      { id: 3, name: "Fuad", email: "fuad@example.com", telephoneNumber: "456123789", alternateTelephoneNumber: "789321456" },
+  ]);
+
+  useEffect(() => {
+      if (gridRef.current) {
+          // gridRef.current.api.sizeColumnsToFit();
+      }
+  }, [rowData]);
+
+  const handleEdit = (data) => {
       setSelectedRow({ ...data });
       setEditDialogOpen(true);
-    };
+  };
 
-    const handleDelete = (data) => {
-        setSelectedRow(data);
-        setDeleteDialogOpen(true);
-    };
+  const handleDelete = (data) => {
+      setSelectedRow(data);
+      setDeleteDialogOpen(true);
+  };
 
-    const handleEditChange = (e) => {
-        const { name, value } = e.target;
-        setSelectedRow(prev => ({ ...prev, [name]: value }));
-    };
+  const confirmDelete = () => {
+      setRowData(rowData.filter(row => row.id !== selectedRow.id));
+      setDeleteDialogOpen(false);
+  };
 
-    const saveEdit = () => {
-        setRowData(rowData.map(row => row.customerId === selectedRow.customerId ? selectedRow : row));
-        setEditDialogOpen(false);
-    };
+  const handleNewContactChange = (e) => {
+      const { name, value } = e.target;
+      setNewContact(prev => ({ ...prev, [name]: value }));
+  };
 
-    const confirmDelete = () => {
-        setRowData(rowData.filter(row => row.customerId !== selectedRow.customerId));
-        setDeleteDialogOpen(false);
-    };
+  const saveNewContact = () => {
+      setRowData([...rowData, { id: rowData.length + 1, ...newContact }]);
+      setNewContactDialogOpen(false);
+  };
 
-
-    const Dialog = ({ open, onOpenChange, children }) => {
-      if (!open) return null;
-      
-      return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            {children}
-          </div>
+  const Dialog = ({ open, onOpenChange, children }) => {
+    if (!open) return null;
+    
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+          {children}
         </div>
-      );
-    };
+      </div>
+    );
+  };
+  
+  const DialogTrigger = ({ children, onClick }) => {
+    return <div onClick={onClick}>{children}</div>;
+  };
+  
+  const DialogContent = ({ children }) => {
+    return <div className="mt-4">{children}</div>;
+  };
+  
+  const DialogTitle = ({ children }) => {
+    return <h2 className="text-lg font-semibold">{children}</h2>;
+  };
+  
+  const DialogFooter = ({ children }) => {
+    return <div className="mt-4 flex justify-end gap-2">{children}</div>;
+  };
+
+  // const handleUploadComplete = (documentIds) => {
     
-    const DialogTrigger = ({ children, onClick }) => {
-      return <div onClick={onClick}>{children}</div>;
-    };
-    
-     const DialogContent = ({ children }) => {
-      return <div className="mt-4">{children}</div>;
-    };
-    
-     const DialogTitle = ({ children }) => {
-      return <h2 className="text-lg font-semibold">{children}</h2>;
-    };
-    
-     const DialogFooter = ({ children }) => {
-      return <div className="mt-4 flex justify-end gap-2">{children}</div>;
-    };
+  //   // setValue((prev) => ({
+  //   //   ...prev,
+  //   //   documents: [...prev.documents, { documentId }],
+  //   // }));
+  //   setValue( "documents", [{documentId : documentIds} ]);
+  //   console.log('Document ID: ', { documentId : `"${documentIds}"`});
+  // };
   
 
   return (
@@ -298,17 +359,7 @@ export default function FormCustomer() {
         <div className="col-span-2">
         <Card>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">                  
-            <div className="col-span-3  p-4 rounded-md">
-              <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Customer Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 m-4">             
-                  {/* <Input label="System Id" registerName="id" requiredState="false" disabled /> */}
-                  {/* <Input label="System Category ID." registerName="categoryId" requiredState="false" disabled/> */}
-                  {/* <Input label="System SubCategory ID" registerName="subCategoryId" requiredState="false"  disabled/> */}
-
-                  <Select label="Customer Categories" options={customerOptions} registerName="customerType" requiredState="false" />                                                                                
-              </div>
-            </div>
-
+           
             <div className="col-span-3 p-4 rounded-md">
               <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Customer Details</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 m-4">
@@ -320,33 +371,38 @@ export default function FormCustomer() {
                   <Select label="Customer Type" options={customerTypeOptions} registerName="customerType" requiredState="false" />                                                                
                   <Input  label="Industry" placeholder="Enter Industry Details" registerName="industry" requiredState="false" />
                   <Input  type="textarea"  label="Customers Specialization"  placeholder="Enter Specializations" registerName="specializations" requiredState="false"  />
+                  <Select label="Customer Categories" options={customerOptions} registerName="customerType" requiredState="false" />                                                                                
+
               </div>
             </div>    
 
             <div className="col-span-5 p-4 rounded-md">
-              <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Contact Person Tables</h4>                
+              <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Contact Person Tables</h4>  
+              <Button onClick={() => setNewContactDialogOpen(true)} className="bg-blue-500 text-white mr-3">New Contact</Button>
+
               <div className="ag-theme-alpine w-full h-[300px] m-4">
                   <AgGridReact
                       ref={gridRef}
                       rowData={rowData}
                       columnDefs={columnDefs}
                       domLayout='autoHeight'
-                      pagination={false}                        
+                      pagination={false}    
+                      onGridReady={onGridReady}                    
                       />
               </div>
                {/* Edit Dialog */}
-               <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+               <Dialog open={newContactDialogOpen} onOpenChange={setNewContactDialogOpen}>
                     <DialogContent>
                         <DialogTitle>Edit Customer Contact </DialogTitle>
                         <div className="space-y-2">
-                            <input type="text" name="name" value={selectedRow?.name || ''} onChange={handleEditChange} className="w-full p-2 border rounded" placeholder="Name" />
-                            <input type="text" name="clientCode" value={selectedRow?.clientCode || ''} onChange={handleEditChange} className="w-full p-2 border rounded" placeholder="Client Code" />
-                            <input type="number" name="customerType" value={selectedRow?.customerType || ''} onChange={handleEditChange} className="w-full p-2 border rounded" placeholder="Customer Type" />
-                            <input type="text" name="industry" value={selectedRow?.industry || ''} onChange={handleEditChange} className="w-full p-2 border rounded" placeholder="Industry" />
+                          <input type="text" name="name" value={newContact.name} onChange={handleNewContactChange} className="w-full p-2 border rounded" placeholder="Name" />
+                          <input type="email" name="email" value={newContact.email} onChange={handleNewContactChange} className="w-full p-2 border rounded" placeholder="Email" />
+                          <input type="text" name="telephoneNumber" value={newContact.telephoneNumber} onChange={handleNewContactChange} className="w-full p-2 border rounded" placeholder="Telephone" />
+                          <input type="text" name="alternateTelephoneNumber" value={newContact.alternateTelephoneNumber} onChange={handleNewContactChange} className="w-full p-2 border rounded" placeholder="Alternate Telephone" />
                         </div>
                         <DialogFooter>
-                            <Button className="bg-orange-500 text-white mr-3" onClick={saveEdit}>Save</Button>
-                            <Button className="bg-blue-500 text-white mr-3" onClick={() => setEditDialogOpen(false)} variant="secondary">Cancel</Button>
+                            <Button className="bg-orange-500 text-white mr-3" onClick={saveNewContact}>Save</Button>
+                            <Button className="bg-blue-500 text-white mr-3" onClick={() => setNewContactDialogOpen(false)} variant="secondary">Cancel</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
@@ -410,21 +466,10 @@ export default function FormCustomer() {
                   <Input label="Mobile Phone"  placeholder="Enter mobilePhone" registerName="companyOwner.mobilePhone" requiredState="false" />
                   <Input label="Alternate Phone No."  placeholder="Enter Alternate Phone" registerName="companyHead.alternateTelephoneNumber" requiredState="false" />                                                                                                                                 
               </div>
-            </div>
-
-            <div className="col-span-3 p-4 rounded-md">
-              <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Contact Person Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 m-4">                    
-                  {/* <Input label="CustomerID"  placeholder="Enter CustomerId" registerName="customerId.name" requiredState="false" /> */}
-                  <Input label="Full Name"  placeholder="Enter Full Name" registerName="customerId.name" requiredState="false"/>
-                  <Input type="email" label="Email"  placeholder="Enter Email" registerName="customerId.email" requiredState="false" />
-                  <Input label="Mobile Phone"  placeholder="Enter mobilePhone" registerName="customerId.mobilePhone" requiredState="false" />
-                  <Input label="Alternate Phone No."  placeholder="Enter Alternate Phone" registerName="companyHead.alternateTelephoneNumber" requiredState="false" />                                                                                                                                                                  
-              </div>
-            </div>                         
+            </div>          
             
             <div className="col-span-3 flex justify-end">
-              <Button type="submit" className="bg-orange-500 text-white mr-3" >Submit</Button>
+              <Button type="submit" className="bg-orange-500 text-white mr-3" > { isEditing ? 'Update' : 'Submit'}</Button>
               <Button type="button" className="bg-blue-400 text-white">Cancel</Button>
             </div>
           
@@ -437,9 +482,9 @@ export default function FormCustomer() {
         {/* Top Inputs */}
         <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md">Generated Inputs:</h4>                
         <div className="grid grid-cols-3 gap-2 m-4">         
-          <Input label="Client Code" registerName="customerId.clientCode" requiredState="false" disabled />
-          <Input label="Consecutive No." registerName="customerId.consecutiveNo" requiredState="false" disabled/>
-          <Input label="ID Date" registerName="customerId.createDate" requiredState="false"  disabled/>
+          <Input label="Client Code" registerName="clientCode" requiredState="false" disabled />
+          <Input label="Consecutive No." registerName="consecutiveNo" requiredState="false" disabled/>
+          <Input label="Customer No." registerName="createDate" requiredState="false"  disabled/>
         </div>
 
         <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md mt-2">Documents To Upload:</h4>                
@@ -447,10 +492,7 @@ export default function FormCustomer() {
         <Card className="col-span-2">
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center justify-between border rounded-lg p-4">
-              <span>Upload Documents</span>
-              <Button variant="outline">
-                <Upload className="w-4 h-4 mr-2" /> Upload
-              </Button>
+              {/* <FormDocumentUpload onUploadComplete={handleUploadComplete} /> */}
             </div>
           </CardContent>
         </Card>

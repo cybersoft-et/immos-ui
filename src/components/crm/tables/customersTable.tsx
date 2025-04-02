@@ -28,7 +28,7 @@ const CustomersTable = () => {
   };
 
   const onGridReady = useCallback((params) => {
-    params.api.setQuickFilter(searchText);
+    // params.api.setQuickFilter(searchText);
   }, [searchText]);
 
   const columnDefs = [
@@ -43,7 +43,7 @@ const CustomersTable = () => {
         headerName: "Actions",
         cellRenderer: (params) => (
           <div className="flex gap-2">
-            <Button variant="outline" className=" bg-orange-500  hover:bg-orange-600" onClick={() => navigate(`/edit/${params.data.id}`)}>Edit</Button>
+            <Button variant="outline" className=" bg-orange-500  hover:bg-orange-600" onClick={() => navigate(`/customerform/${params.data.id}`)}>Edit</Button>
             <Button variant="destructive" className="bg-blue-500  hover:bg-blue-600" onClick={() => setDeleteItem(params.data)}>Delete</Button>
           </div>
         ),
@@ -69,6 +69,7 @@ const CustomersTable = () => {
           domLayout='autoHeight'
           onGridReady={onGridReady}
         />
+         {/* <Link to="/customerform">Create Customer</Link> */}
       </div>
       {/* {deleteItem && (
         <Dialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>

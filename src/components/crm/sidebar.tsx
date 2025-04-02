@@ -10,8 +10,9 @@ const menuItems = [
     icon: <NotebookText size={20}/>, 
     key: "customer",
     submenu: [
-      { name: "Customer Form", key: "customerForm" },
+      { name: "Customer Form", key: "customerform/new" },
       { name: "Customer Table", key: "GridCustomers" },
+      { name: "Customer Demo", key: "demoCustomer" },
     ], 
   },
   { name: "Orders", icon: <ShoppingCart size={20}/>, key: "orders" },
