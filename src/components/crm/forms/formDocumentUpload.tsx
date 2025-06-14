@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
-import { Button, Input, Select,  Dialog, DialogTrigger, DialogContent, Textarea, Progress, DialogTitle } from "./ui/index";
+import { Button, Input, Select,  Dialog, DialogTrigger, DialogContent, Textarea, Progress, DialogTitle } from "../ui/index";
 import axios from "axios";
 
 const FormDocumentUpload = ({onUploadComplete}) => {

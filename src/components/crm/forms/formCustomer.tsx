@@ -2,9 +2,9 @@ import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useMutation } from "react-query";
-import { CardContent } from "./layout/cardContent";
-import { Card } from "./layout/card";
-import Button  from "./ui/button";
+import { CardContent } from "../layout/cardContent";
+import { Card } from "../layout/card";
+import Button  from "../ui/button";
 import React from "react";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
@@ -14,6 +14,7 @@ import { faTrash } from "@fortawesome/free-solid-svg-icons/faTrash";
 import { faPenToSquare } from "@fortawesome/free-solid-svg-icons/faPenToSquare";
 // import FormDocumentUpload from "./formDocumentUpload";
 import { useParams } from "react-router-dom";
+import DocumentManager from "./documentManager";
 
 const customerTypeOptions = [
     { categoryName: 'Individual', label: 'Individual' },
@@ -99,7 +100,7 @@ interface IFormInput {
     createDate: string, 
   }
 
-export default function FormCustomer() {
+const FormCustomer = () => {  
 
   const {id } = useParams<{id: string}>();
   const editId = id?.replace(":", "");
@@ -109,6 +110,12 @@ export default function FormCustomer() {
   console.log('#FORM - EDIT ID: ', isEditing , ': ID ' , editId);
 
   const { register, handleSubmit, setValue } = useForm<IFormInput>();
+  const [documents, setDocuments] = useState([
+    {
+      documentId: 0
+    }
+  ]);
+
   const [ deleteItem, setDeleteItem] = useState(null);
   const [ dataGrid , setData] = useState([]);
 
@@ -157,6 +164,7 @@ export default function FormCustomer() {
   };
 
   const handleBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+      e.preventDefault();
       const value = e.target.value;
       try {
           const response = await axios.get(`https://localhost:8000/api/core/Customers/CustomerId?customerName=${value}`);
@@ -225,25 +233,41 @@ export default function FormCustomer() {
 
   }, [!isEditing]);
 
-  useEffect(() => {
-    if (!isNaN(Number(id))) {
-        // Fetch customer data for editing
-        axios.get(`https://localhost:8000/api/core/Customers/${id}`)
-            .then(response => {
-                const customerData = response.data;
-                // Populate form fields with customer data
-                Object.keys(customerData).forEach(key => {
-                    setValue(key as keyof IFormInput, customerData[key]);
-                });
-            })
-            .catch(error => console.error("Error fetching customer data:", error));
-      }
-  }, [isEditing]);
+  // useEffect(() => {
+  //   if (!isNaN(Number(id))) {
+  //       // Fetch customer data for editing
+  //       axios.get(`https://localhost:8000/api/core/Customers/${id}`)
+  //           .then(response => {
+  //               const customerData = response.data;
+  //               // Populate form fields with customer data
+  //               Object.keys(customerData).forEach(key => {
+  //                   setValue(key as keyof IFormInput, customerData[key]);
+  //               });
+  //           })
+  //           .catch(error => console.error("Error fetching customer data:", error));
+  //     }
+  // }, [isEditing]);
   
-  const onDeleteConfirm = () => {
-      console.log("Deleting item:", deleteItem);
-      setDeleteItem(null);
-  };
+    // Fetch customer data if editing
+    useEffect(() => {
+      if (isEditing) {
+        axios
+          .get(`https://localhost:8000/api/core/Customers/${id}`)
+          .then((response) => {
+            const customerData = response.data;
+            // Populate form fields with customer data
+            Object.keys(customerData).forEach((key) => {
+              setValue(key as keyof IFormInput, customerData[key]);
+            });
+          })
+          .catch((error) => console.error("Error fetching customer data:", error));
+      }
+    }, [isEditing, id]);
+
+  // const onDeleteConfirm = () => {
+  //     console.log("Deleting item:", deleteItem);
+  //     setDeleteItem(null);
+  // };
 
   const onGridReady = (params) => {
     // this.gridApi = params.api;
@@ -338,22 +362,28 @@ export default function FormCustomer() {
     return <div className="mt-4 flex justify-end gap-2">{children}</div>;
   };
 
-  // const handleUploadComplete = (documentIds) => {
+  const handleUploadComplete = (documentIds) => {
     
-  //   // setValue((prev) => ({
-  //   //   ...prev,
-  //   //   documents: [...prev.documents, { documentId }],
-  //   // }));
-  //   setValue( "documents", [{documentId : documentIds} ]);
-  //   console.log('Document ID: ', { documentId : `"${documentIds}"`});
-  // };
+    // setValue((prev) => ({
+    //   ...prev,
+    //   documents: [...prev.documents, { documentId }],
+    // }));
+    setValue( "documents", [{documentId : documentIds} ]);
+    console.log('Document ID: ', { documentId : `"${documentIds}"`});
+  };
+  
+  const handleDocumentUpdate = (newDocument) => {
+    // setDocuments([...documents, newDocument]);
+    setValue( "documents", [{documentId : newDocument} ]);
+    console.log('Document ID: ', { documentId : `"${newDocument}"`});
+  };
   
 
   return (
     <div >
       <div className="bg-orange-500 text-white p-4 rounded-md">
-          <h3 className="font-semibold text-lg">Customer Information Form</h3>
-          <p className="text-sm">Please fill in the following details to register a new customer.</p>
+          <h3 className="font-semibold text-lg">{isEditing ? "Edit Customer" : "Create New Customer"} Information Form</h3>
+          <p className="text-sm">Please fill {isEditing ? "Edit" : "fill"} in the following details to register a new customer.</p>
       </div> 
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-3 gap-2 p-3">
         <div className="col-span-2">
@@ -490,10 +520,16 @@ export default function FormCustomer() {
         <h4 className="text-md font-semibold mb-2 bg-orange-200 p-2 rounded-md mt-2">Documents To Upload:</h4>                
         {/* File Uploads */}
         <Card className="col-span-2">
-          <CardContent className="p-4 space-y-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
             <div className="flex items-center justify-between border rounded-lg p-4">
-              {/* <FormDocumentUpload onUploadComplete={handleUploadComplete} /> */}
+              <DocumentManager onDocumentUpdate={handleDocumentUpdate} />
+              {/* <DocumentManager /> */}              
             </div>
+            {/* Display current documents state if needed */}
+            <div>
+                <h2>Current Documents:</h2>
+                <pre>{JSON.stringify(documents, null, 2)}</pre>
+              </div>
           </CardContent>
         </Card>
       </div>
@@ -521,6 +557,8 @@ function Select({ label, options = [], className = "" , registerName="", require
         </div>
     );
 }
+
+export default FormCustomer;
 
 
 

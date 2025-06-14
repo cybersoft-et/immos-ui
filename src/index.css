@@ -1,3 +1,41 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    overflow: hidden !important;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* This removes the scroll attribute from the html element */
+  html[scroll] {
+    overflow: hidden !important;
+  }
+}
+
+/* Allow horizontal scrolling in components that need it */
+@layer utilities {
+  .allow-horizontal-scroll {
+    overflow-x: auto;
+  }
+}
+
+
+/* body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #f3f4f6;
+} */

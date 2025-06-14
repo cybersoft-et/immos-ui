@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useRegister } from "./hooks";
+import { useRegister } from "../hooks";
 
 export default function Signup() {
 
@@ -109,7 +109,7 @@ export default function Signup() {
             </div>
     
             <div className="mt-8 text-center">
-              <p className="text-orange-500 font-bold text-lg">Panafric</p>
+              <p className="text-orange-500 font-bold text-lg">PanAfric</p>
               <p className="text-gray-600">Global Logistics</p>
             </div>
           </div>

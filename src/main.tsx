@@ -3,6 +3,9 @@ import './index.css'
 import App from './App.tsx'
 import { QueryClient, QueryClientProvider  } from 'react-query'
 
+// Remove scroll attribute from html element
+// document.documentElement.removeAttribute('scroll');
+
 const queryClient = new QueryClient()
 
 const root = ReactDOM.createRoot(

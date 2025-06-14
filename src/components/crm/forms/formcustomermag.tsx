@@ -1,6 +1,5 @@
 // @ts-nocheck
 
-export default function FormCustomerManagment()
 import { useState } from "react";
 import { useMutation } from "react-query";
 

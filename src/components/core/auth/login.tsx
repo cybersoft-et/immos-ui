@@ -2,13 +2,13 @@
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useLogin } from "./hooks";
+import { useLogin } from "../hooks";
 
 export default function Login () {
 
   const mutation = useLogin();
 
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({ userName: "PAGAdmin", password: "RipeApricot2025" });
   const [errorMsg, setError] = useState("");
   const [successMsg, setSuccess] = useState("");
 
@@ -26,13 +26,13 @@ export default function Login () {
 
     console.log("Login -> formData", formData);
 
-    if (!formData.email || !formData.password ) {
+    if (!formData.userName || !formData.password ) {
       setError("All fields are required.");
       return;
     }
 
     mutation.mutate(
-      { email: formData.email, password: formData.password },
+      { userName: formData.userName, password: formData.password },
       {
         onSuccess: (data) => {
           console.log('Success:', data);
@@ -62,9 +62,9 @@ export default function Login () {
               <div>
                 <label className="block text-gray-700">Email:</label>
                 <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
+                  type="text"
+                  name="userName"
+                  value={formData.userName}
                   onChange={handleChange}                  
                   placeholder="e.g: admin@gmail.com"
                   className="w-full p-2 mt-1 border rounded-lg bg-gray-100"

@@ -11,6 +11,7 @@ import { AllCommunityModule, ModuleRegistry, provideGlobalGridOptions } from 'ag
 
 const CustomersTable = () => {
   const navigate = useNavigate();
+  
   const [data, setData] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [deleteItem, setDeleteItem] = useState(null);
