@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, MoreVertical, ChevronDown, Plus, X, Calendar, Phone, Mail, MessageSquare } from 'lucide-react';
-
 // Define interfaces based on provided types
-interface CustomerDto {
-  id: number;
-  name: string;
-  email?: string;
-  phone?: string;
-}
+import { CustomerDto , CrmDealDto, CrmActivityDto, CrmStatusDto, ServiceTypeDto, CrmActivityTypeDto, CrmStatusHistoryDto, KanbanColumn } from '../dtos/crmDtos';
 
 interface ServiceTypeDto {
   id: number;
@@ -74,14 +68,19 @@ interface KanbanColumn {
 }
 
 const CRMKanbanBoard = () => {
+  const API_BASE: string = import.meta.env.VITE_API_BASE_URL;
+  const API_FILE_BASE: string = import.meta.env.VITE_API_FILE_BASE_URL;
+
   // Sample status data
   const statuses: CrmStatusDto[] = [
-    { id: 1, statusName: 'Lead' },
-    { id: 2, statusName: 'Contacted' },
-    { id: 3, statusName: 'Qualified' },
-    { id: 4, statusName: 'Proposal' },
-    { id: 5, statusName: 'Closed Won' },
-    { id: 6, statusName: 'Closed Lost' },
+    { id: 1, statusName: 'Initiated' },
+    { id: 2, statusName: 'RequestedForQuote' },
+    { id: 3, statusName: 'InProgress' },
+    { id: 4, statusName: 'ForwardedToCommercialDepartment ' },
+    { id: 5, statusName: 'Negotiation' },
+    { id: 6, statusName: 'Completed' },
+    { id: 7, statusName: 'Closed' },
+    { id: 8, statusName: 'Lost' },
   ];
   
   // Sample customer data
@@ -256,7 +255,7 @@ const CRMKanbanBoard = () => {
       customer: customers[10],
       customerId: 11,
       serviceType: serviceTypes[3],
-      serviceTypeId: 4,
+      serviceTypeId: 0,
       assignedEmployeeId: 111,
       status: statuses[4],
       statusId: 5,
@@ -307,16 +306,64 @@ const CRMKanbanBoard = () => {
   });
   
   const [newCard, setNewCard] = useState<Partial<CrmDealDto>>({
-    cRMRefNo: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+    // cRMRefNo: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+    cRMRefNo: '',
     customerId: 0,
     serviceTypeId: 1,
     value: '',
   });
+
+  const [customerData, setCustomerData] = useState <CustomerDto | [] > ([]);
+  // const [serviceTypes, setServiceTypes] = useState<ServiceTypeDto[] | [] >([]);
   
   // Initialize columns from sample data
   useEffect(() => {
     setColumns(generateInitialColumns());
+
+    const fetchAll = async () => {
+      try {
+        const [customerRes, serviceTypeRes] = await Promise.all([
+          fetch(`${API_BASE}/Core/Customers`).then(res => res.json()),
+          fetch(`${API_BASE}/Crm/ServiceTypes`).then(res => res.json()),
+        ]);
+
+        setCustomerData(customerRes);        
+        // setServiceTypes(serviceTypeRes);
+
+      } catch (error) {
+        console.error("API fetch error:", error);
+      } finally {
+        // setLoading(false);
+      }
+    };
+
+    fetchAll();
+
+    // const fetchCustomers = async () => {
+    //   // setLoading(true);
+    //   // setError(null);
+      
+    //   try {
+    //     const response = await fetch(`${API_BASE}/Core/Customers`);
+        
+    //     if (!response.ok) {
+    //       throw new Error(`Failed to fetch customers: ${response.status}`);
+    //     }
+        
+    //     const data = await response.json();
+    //     setCustomerData(data);
+    //   } catch (err) {
+    //     console.error('Error fetching customers:', err);
+    //     // setError('Failed to load customers. Please try again later.');
+    //   } finally {
+    //     // setLoading(false);
+    //   }
+    // };
+  
+    // fetchCustomers();
   }, []);
+
+  console.log('#crmKanbanBoard customerData', customerData);
 
   // Handle card drag start
   const handleDragStart = (e: React.DragEvent, columnId: number, cardId: number) => {
@@ -424,13 +471,30 @@ const CRMKanbanBoard = () => {
   };
 
   // Handle input change for new card form
-  const handleNewCardChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleNewCardChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+
+    // console.log('#crmKanbanBoard - handleNewCardChange: ', name, value);
     
-    if (name === 'customerId' || name === 'serviceTypeId') {
-      setNewCard({ ...newCard, [name]: parseInt(value) });
-    } else {
-      setNewCard({ ...newCard, [name]: value });
+    // if (name === 'customerId' || name === 'serviceTypeId') {
+    //   setNewCard({ ...newCard, [name]: parseInt(value) });
+    // } else {
+    //   setNewCard({ ...newCard, [name]: value });
+    // }
+
+    // fetch CRM REF. Number
+    // try to fetch also 
+    try {
+        const response : any = await fetch(`${API_BASE}/Crm/CrmReferenceNumber?customerId=${value}`);
+
+        const data = await response.text();
+        if (!response.ok) {
+            throw new Error(`Failed to fetch CrmReferenceNumber data: ${response.status}`);
+        }
+        setNewCard({ ...newCard, cRMRefNo: String(data), customerId: parseInt(value) });
+
+    } catch (error) {
+        console.error("Error fetching data:", error);
     }
   };
 
@@ -690,6 +754,19 @@ const CRMKanbanBoard = () => {
                 {showCardForm && newCardColumn === column.id && (
                   <div className="bg-white p-3 rounded-md shadow border-2 border-blue-500">
                     <div className="space-y-2">
+                      
+                      <select
+                        name="customerId"
+                        className="w-full p-2 border rounded text-sm"
+                        value={newCard.customerId || 0}
+                        onChange={handleNewCardChange}
+                      >
+                        <option value={0}>Select customer...</option>
+                        {customerData.map(customer => (
+                          <option key={customer.id} value={customer.id}>{customer.name}</option>
+                        ))}
+                      </select>
+
                       <input
                         type="text"
                         name="cRMRefNo"
@@ -698,17 +775,7 @@ const CRMKanbanBoard = () => {
                         value={newCard.cRMRefNo}
                         onChange={handleNewCardChange}
                       />
-                      <select
-                        name="customerId"
-                        className="w-full p-2 border rounded text-sm"
-                        value={newCard.customerId || 0}
-                        onChange={handleNewCardChange}
-                      >
-                        <option value={0}>Select customer...</option>
-                        {customers.map(customer => (
-                          <option key={customer.id} value={customer.id}>{customer.name}</option>
-                        ))}
-                      </select>
+
                       <select
                         name="serviceTypeId"
                         className="w-full p-2 border rounded text-sm"

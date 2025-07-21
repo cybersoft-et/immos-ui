@@ -103,35 +103,9 @@ const handleCreateCustomer = () => {
 };
 
 
-  // Fetch customers
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const response = await fetch('https://localhost:8000/api/core/Customers');
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch customers: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        setRowData(data);
-      } catch (err) {
-        console.error('Error fetching customers:', err);
-        setError('Failed to load customers. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchCustomers();
-  }, []);
-
-  
-  // Handle refresh
-  const handleRefresh = async () => {
+// Fetch customers
+useEffect(() => {
+  const fetchCustomers = async () => {
     setLoading(true);
     setError(null);
     
@@ -145,12 +119,38 @@ const handleCreateCustomer = () => {
       const data = await response.json();
       setRowData(data);
     } catch (err) {
-      console.error('Error refreshing customers:', err);
-      setError('Failed to refresh customers. Please try again later.');
+      console.error('Error fetching customers:', err);
+      setError('Failed to load customers. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
+  
+  fetchCustomers();
+}, []);
+
+  
+// Handle refresh
+const handleRefresh = async () => {
+  setLoading(true);
+  setError(null);
+  
+  try {
+    const response = await fetch('https://localhost:8000/api/core/Customers');
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch customers: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    setRowData(data);
+  } catch (err) {
+    console.error('Error refreshing customers:', err);
+    setError('Failed to refresh customers. Please try again later.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="container mx-auto px-4 py-8">

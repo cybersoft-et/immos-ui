@@ -3,8 +3,6 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
-import axios from 'axios';
-
 interface IFormInput {
   id: 0,
   name: string,
@@ -91,10 +89,19 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [documentsError, setDocumentsError] = useState('');
+  const today = `PGL-${new Date().getFullYear().toLocaleString().substr(-2)}${new Date().getMonth() + 1}${new Date().getDate()}`;
 
-  const [customerCategories, setCustomerCategories] = useState([]);
-  const [subCustomerCategories, setSubCustomerCategories] = useState([]);
-  const [documentTypes , setDocumentTypes ] = useState([]);
+  // const [customerCategories, setCustomerCategories] = useState([]);
+  // const [subCustomerCategories, setSubCustomerCategories] = useState([]);
+  // const [documentTypes , setDocumentTypes ] = useState([]);
+
+  const [lookuData, setlookuData] = useState({
+    customerCategories: [],
+    subCustomerCategories: [],
+    documentTypes: [],
+    consecutiveNos : 0,
+    // consecutiveNos : [{ consecutiveNo: 0, createDate: '' }],
+  });
   
   const fileInputRef = useRef(null);
   const gridRef = useRef(null);
@@ -173,84 +180,70 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
   });
 
   const isEditing = editId !== typeof String && editId !== null && editId !== undefined;
-  console.log('#FORM - EDIT ID: ', isEditing, ' Paramters: ', editId);
+  console.log('#CustomerForm - EDIT ID: ', isEditing, ' Paramters: ', editId);
+
+  const API_BASE: string = import.meta.env.VITE_API_BASE_URL;
+  const API_FILE_BASE: string = import.meta.env.VITE_API_FILE_BASE_URL;
+
+  console.log('#CustomerForm - API_BASE: ', API_BASE);
 
   useEffect(() => {
-    const today = `PGL-${new Date().getFullYear().toLocaleString().substr(-2)}${new Date().getMonth() + 1}${new Date().getDate()}`;
-    const fetchCategoriesOptions = async () => {
+
+    // const fetchConsecutiveNumber = async () => {
+    //   try {
+    //     const response = await axios.get(`${API_BASE}/Core/Customers/ConsecutiveNumber`); 
+    //     setValue('consecutiveNo', response.data);
+    //     setValue('createDate', today);
+
+    //   } catch (err) {
+    //     // setError("Failed to load options");
+    //   } finally {
+    //     // setLoading(false);
+    //   }
+    // };
+
+    const fetchAll = async () => {
       try {
-        const response = await axios.get("https://localhost:8000/api/Lookups/CustomerCategories");
-        setCustomerCategories(response.data);
+        const [CustomerCategoriesRes, subCustomerCategoriesRes, documentTypesRes, consecutiveNoRes] = await Promise.all([
+          fetch(`${API_BASE}/Lookups/CustomerCategories`).then(res => res.json()),
+          fetch(`${API_BASE}/Lookups/CustomerSubCategories`).then(res => res.json()),
+          fetch(`${API_BASE}/documents/documentTypes`).then(res => res.json()),
+          fetch(`${API_BASE}/Core/Customers/ConsecutiveNumber`).then(res => res.json()),
+        ]);
 
-        // console.log('#FORM - CATEGORIES: ', response.data);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch categories: ${response.status}`);
-        }
-      } catch (err) {
-        // setError("Failed to load options");
-      } finally {
-        // setLoading(false);
-      }
-    };
+        setlookuData({
+          customerCategories: CustomerCategoriesRes,
+          subCustomerCategories: subCustomerCategoriesRes,
+          documentTypes: documentTypesRes,
+          consecutiveNos : consecutiveNoRes
+        });
 
-    const fetchDocumentTypesOptions = async () => {
-      try {
-        const response = await axios.get("https://localhost:8000/api/documents/documentTypes");
-        setDocumentTypes(response.data);
+        console.log('#CustomerForm - Fetch consecutiveNoRes: ', consecutiveNoRes);
 
-        // console.log('#FORM - DocumentTypes: ', response.data);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch categories: ${response.status}`);
-        }
-      } catch (err) {
-        // setError("Failed to load options");
-      } finally {
-        // setLoading(false);
-      }
-    }
-
-    const fetchSubCategoriesOptions = async () => {
-      try {
-        const response = await axios.get("https://localhost:8000/api/Lookups/CustomerSubCategories");
-        setSubCustomerCategories(response.data);
-
-        // console.log('#FORM - CustomerSubCategories: ', response.data);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch categories: ${response.status}`);
-        }
-      } catch (err) {
-        // setError("Failed to load options");
-      } finally {
-        // setLoading(false);
-      }
-    };
-
-    const fetchConsecutiveNumber = async () => {
-      try {
-        const response = await axios.get("https://localhost:8000/api/core/Customers/ConsecutiveNumber"); 
-        setValue('consecutiveNo', response.data);
+        setValue('consecutiveNo', consecutiveNoRes);
         setValue('createDate', today);
 
-      } catch (err) {
-        // setError("Failed to load options");
+      } catch (error) {
+        console.error("API fetch error:", error);
       } finally {
         // setLoading(false);
       }
     };
-    
-    fetchCategoriesOptions();
-    fetchSubCategoriesOptions();
-    fetchDocumentTypesOptions();
-    fetchConsecutiveNumber();
+
+    fetchAll();
+    // fetchConsecutiveNumber();
+
+    console.log('#CustomerForm - ReactHook - Fetch Supplymentary Data: ', lookuData.documentTypes);
 
   }, []);
 
   const fetchCustomerData = async () => {
+    
     setIsLoading(true);
     setLoadingError('');
     
     try {
-      const response = await fetch(`https://localhost:8000/api/core/Customers/${editId}`);
+      const response = await fetch(`${API_BASE}/core/Customers/${editId}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch customer data: ${response.status}`);
@@ -264,16 +257,25 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       
       // Set customer type for conditional rendering
       setCustomerType(data.customerType || 'Individual');
+
       
       // Process documents for the grid
       if (data.documents && data.documents.length > 0) {
         const formattedDocs = data.documents.map(doc => ({
           documentId: doc.documentId,
-          name: doc.name || 'Untitled',
+          name: doc.document.name || 'Untitled',
           documentType: doc.document.name || 'Unknown',
-          description: doc.description || 'No description',
-          uploadDate: doc.createdDate || new Date().toLocaleDateString()
+          description: doc.document.description || 'No description',
+          createDate: doc.document.createdDate || new Date().toLocaleDateString(),
+          size : doc.document.size || 0,
+          id: doc.documentId,
+          documentTypeId: lookuData.documentTypes.find(type => type.id === doc.document.documentTypeId)?.name || doc.document.documentTypeId,
+          contentType: doc.document.contentType || 'application/octet-stream',
+          documentPath : doc.document.documentPath ? `${API_FILE_BASE}/${doc.document.documentPath}` : '' ,
         }));
+
+        console.log('#CustomerForm - fetchCustomerData - formattedDocs: ', formattedDocs);  
+        console.log('##CustomerForm - fetchCustomerData - documentTypes' , lookuData.documentTypes);
         setUploadedDocuments(formattedDocs);
       }
       
@@ -287,7 +289,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     }
   };
 
-  const fetchDocuments = async (customerId?: any) => {    
+  const fetchDocuments = async (customerId?: any, documentId?: any) => {    
     setIsLoadingDocuments(true);
     setDocumentsError('');
     
@@ -295,25 +297,42 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
 
       let response = null;
 
-      if(customerId !== undefined || customerId !== null || customerId !== 0) {
-        response = await fetch(`https://localhost:8000/api/core/Customers/${customerId}/documents`);
-    
-        if (!response.ok) {
-          throw new Error(`Failed to fetch documents: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        setUploadedDocuments(data);
-        
-        // Update form documents array with the IDs
-        const documentIds = data.map(doc => ({ documentId: doc.id }));
-        replaceDocuments(documentIds);
-        
-        console.log("Documents loaded successfully:", data);
+      if(customerId !== undefined && customerId !== null && customerId !== 0) {
+        console.log('#CustomerForm - fetchDocuments - Fetching by customerId: ', customerId);
+        response = await fetch(`${API_BASE}/core/Customers/${customerId}/documents`);
+      }else if (documentId !== undefined && documentId !== null && documentId !== 0) {
+        // Fetch documents by documentId
+        console.log('#CustomerForm - fetchDocuments - Fetching by documentId: ', documentId);
+        response = await fetch(`${API_BASE}/documents/${documentId}`);
+      }
+      else{
+        response = await fetch(`${API_BASE}/documents`);
       }
       
+      if (!response.ok) {
+        throw new Error(`Failed to fetch documents: ${response.status}`);
+      }
+                  
+      const data = await response.json();
+
+      const formattedDocs = data.map(doc => ({
+        id: doc.id,
+        documentTypeId: lookuData.documentTypes.find(type => type.id === doc.documentTypeId)?.name || doc.documentTypeId,
+        documentId: doc.documentId,
+        name: doc.name || 'Untitled',
+        documentType: doc.name || 'Unknown',
+        description: doc.description || 'No description',
+        size: doc.size || 0,
+        createDate: doc.createdDate || new Date().toLocaleDateString(),
+        contentType : doc.contentType || 'application/octet-stream',
+        documentPath : doc.document.documentPath ? `${API_FILE_BASE}/${doc.document.documentPath}` : '' ,
+      }));
+      setUploadedDocuments(formattedDocs);
+      console.log("CustomerForm - fetchDocuments - Documents loaded successfully:", data);
+      
+      
     } catch (error) {
-      console.error('Error fetching documents:', error);
+      console.error('#CustomerForm - Error fetching documents:', error);
       setDocumentsError('Failed to load documents. Please try again or contact support.');
     } finally {
       setIsLoadingDocuments(false);
@@ -326,13 +345,13 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
         
     if (isEditing) {
       
+      setUploadedDocuments([]);
       fetchCustomerData();
-      fetchDocuments(editId);
 
-      console.log('#FORM - Fetching customer documents for editId: ', editId);
+      console.log('#CustomerForm - Fetching customer documents for editId: ', editId);
     } else {
       // Reset the form if editId is null
-      console.log('#FORM - Resetting form to default values.');
+      console.log('#CustomerForm - Resetting form to default values.');
 
       reset({
         id: 0,
@@ -379,7 +398,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     { field: 'name', headerName: 'Name', sortable: true, filter: true, flex: 1 },
     { field: 'description', headerName: 'Description', sortable: true, filter: true, flex: 1 },
     { field: 'documentTypeId', headerName: 'Type ID', sortable: true, filter: true, width: 100 },
-    // { field: 'contentType', headerName: 'File Type', sortable: true, filter: true, width: 120 },
+    { field: 'contentType', headerName: 'File Type', sortable: true, filter: true, width: 120 },
     { field: 'size', headerName: 'Size', sortable: true, filter: true, width: 100,
       valueFormatter: params => formatFileSize(params.value)
     },
@@ -393,12 +412,14 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
         return (
           <div className="flex space-x-2">
             <button
+              type='button'
               onClick={() => handleViewDocument(params.data.id)}
               className="px-2 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-xs"
             >
               View
             </button>
             <button
+              type='button'
               onClick={() => handleDeleteDocument(params.data.id)}
               className="px-2 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 text-xs"
               disabled={isViewOnly}
@@ -415,7 +436,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
    const handleViewDocument = (documentId) => {
     setViewDocumentId(documentId);
     setIsViewDialogOpen(true);
-    console.log(`Viewing document: ${documentId}`);
+    console.log(`Viewing document: ${documentId} , ${uploadedDocuments}`);
   };
   
   // Function to handle document deletion
@@ -429,11 +450,10 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     }
     
     // In a real implementation, you would call an API to delete the document
-    // For example:
-    // fetch(`https://localhost:8000/api/documents/${documentId}`, { method: 'DELETE' })
+    // fetch(`${API_BASE}/documents/${documentId}`, { method: 'DELETE' })
     
     // Filter out the document with the given ID from both state arrays
-    const updatedDocuments = uploadedDocuments.filter(doc => doc.id !== documentId);
+    const updatedDocuments = uploadedDocuments.filter(doc => doc.id !== documentd);
     setUploadedDocuments(updatedDocuments);
     
     // Update the react-hook-form documents array
@@ -470,15 +490,15 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
   const handleBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     e.preventDefault();
     const value = e.target.value;
-    console.log('#FORM - BLUR: ', value);
+    console.log('#CustomerForm - BLUR: ', value);
     try {
-        const response : any = await fetch(`https://localhost:8000/api/core/Customers/CustomerId?customerName=${value}`);
+        const response : any = await fetch(`${API_BASE}/core/Customers/CustomerId?customerName=${value}`);
 
         const data = await response.json();
         if (!response.ok) {
             throw new Error(`Failed to fetch customer data: ${response.status}`);
         }
-        console.log('#FORM - BLUR: ', data);
+        console.log('#CustomerForm - BLUR: ', data);
 
         setValue("clientCode", data.clientCode );
         setValue("customerId", data.customerId );
@@ -506,8 +526,8 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     
     try {
       const url = editId 
-        ? `https://localhost:8000/api/core/Customers/${editId}` 
-        : 'https://localhost:8000/api/core/Customers';
+        ? `${API_BASE}/core/Customers/${editId}` 
+        : `${API_BASE}/core/Customers`;
       
       const method = editId ? 'PUT' : 'POST';
       
@@ -570,12 +590,16 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       formData.append('Description', documentForm.Description);
       formData.append('DocumentTypeId', documentForm.DocumentTypeId);
       // formData.append('DocumentType', documentForm.DocumentType);
+
+      if( editId !== null && editId !== undefined && editId !== 0) {
+        formData.append('CreateUserId', editId);
+      }
       
       if (documentForm.Content) {
         formData.append('Content', documentForm.Content);
       }
       
-      const response = await fetch('https://localhost:8000/api/documents', {
+      const response = await fetch(`${API_BASE}/documents`, {
         method: 'POST',
         body: formData,
       });
@@ -583,10 +607,9 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-            
-      // After successful upload, refresh the documents list
-      fetchDocuments(editId);
+
       
+            
       // Reset the document form
       setDocumentForm({
         Name: '',
@@ -603,6 +626,20 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+
+      const responseData = await response.json();
+      console.log('CustomerForm - handleDocumentSubmit - response :', responseData);
+            
+      // After successful upload, refresh the documents list
+      if(editId !== null && editId !== undefined && editId !== 0) {
+        fetchDocuments(editId); // replaced to fetch docs by ID
+        console.log('#CustomerForm - handleDocumentSubmit - Fetching documents for Customer: ', editId);
+
+      }else{
+        fetchDocuments(0, responseData?.id); // replace documents in the form
+        console.log('#CustomerForm - handleDocumentSubmit - Fetching documents for New User: ', responseData?.id);
+      }
+
     } catch (error) {
       console.error('Error uploading document:', error);
       setUploadError('Failed to upload document. Please try again.');
@@ -828,7 +865,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                 disabled={isViewOnly}
                 defaultValue={fetchedCustomer?.categoryId || 'Individual'}
               >               
-                {customerCategories.map((option, index) => (
+                {lookuData.customerCategories.map((option, index) => (
                   <option key={index} value={option.id}>
                       {option.value}
                   </option>
@@ -848,7 +885,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                 disabled={isViewOnly}
                 defaultValue={fetchedCustomer?.subCategoryId}
               >               
-                {subCustomerCategories.map((option, index) => (
+                {lookuData.subCustomerCategories.map((option, index) => (
                   <option key={index} value={option.id}>
                       {option.value}
                   </option>
@@ -1330,7 +1367,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                       disabled={isViewOnly}
                       defaultValue={fetchedCustomer?.DocumentTypeId}
                     >               
-                      {documentTypes.map((option, index) => (
+                      {lookuData.documentTypes.map((option, index) => (
                         <option key={index} value={option.id}>
                             {option.name}
                         </option>
