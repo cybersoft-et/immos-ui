@@ -7,7 +7,8 @@ import Dashboard from "./components/crm/layout/dashboard";
 import CustomerForm from "./components/crm/forms/customerForm";
 import CustomerList from "./components/crm/tables/customerList";
 import CustomerFormUI from "./components/crm/forms/customerFormUI";
-import CRMKanbanBoard from "./components/crm/modules/crmKanbanBoard";
+import CRMKanbanBoard3 from "./components/crm/modules/crmKanbanBoard3";
+import CRMKanbanBoard2 from "./components/crm/modules/crmKanbanBoard2";
 import SalesPipeline from "./components/crm/modules/salesPipeLine";
 
 // Wrapper components to extract and pass URL parameters
@@ -40,7 +41,7 @@ const App = () => {
           <Route path="customerform/edit/:id" element={<CustomerFormWithId />} />
           <Route path="customerform/view/:id" element={<CustomerViewWithId />} />
           
-          <Route path="crmBoard" element={<CRMKanbanBoard /> } />
+          <Route path="crmBoard" element={<CRMKanbanBoard3 /> } />
           <Route path="salesPipeline" element={<SalesPipeline /> } />
 
           <Route path="*" element={<h1>Not Found</h1>} />       

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, MoreVertical, ChevronDown, Plus, X, Calendar, Phone, Mail, MessageSquare } from 'lucide-react';
-// Define interfaces based on provided types
-import { CustomerDto , CrmDealDto, CrmActivityDto, CrmStatusDto, ServiceTypeDto, CrmActivityTypeDto, CrmStatusHistoryDto, KanbanColumn } from '../dtos/crmDtos';
 
-interface ServiceTypeDto {
+// Define interfaces based on provided types
+interface CustomerDto {
   id: number;
   name: string;
+  email?: string;
+  phone?: string;
 }
 
 interface CrmStatusDto {
@@ -13,19 +14,27 @@ interface CrmStatusDto {
   statusName: string;
 }
 
-interface CrmDealDto {
+interface CommunicationStartModeDto {
   id: number;
-  cRMRefNo: string;
-  customer: CustomerDto;
+  modeName: string;
+}
+
+interface CrmDealDto {
+  id?: number;
+  referenceNumber: string;
   customerId: number;
-  serviceType: ServiceTypeDto;
-  serviceTypeId: number;
-  assignedEmployeeId: number;
-  status: CrmStatusDto;
-  statusId: number;
-  createdDate: string;
-  updatedDate: string | null;
-  value?: string; // Added for display purposes
+  communicationStartModeId: number;
+  communicationStartDate: string;
+  requestedServices: string[];
+  recordingPersonnel: string;
+  // Additional fields for UI purposes
+  customer?: CustomerDto;
+  communicationStartMode?: CommunicationStartModeDto;
+  status?: CrmStatusDto;
+  statusId?: number;
+  value?: string;
+  createdDate?: string;
+  updatedDate?: string | null;
 }
 
 interface CrmActivityTypeDto {
@@ -67,205 +76,233 @@ interface KanbanColumn {
   cards: CrmDealDto[];
 }
 
-const CRMKanbanBoard = () => {
-  const API_BASE: string = import.meta.env.VITE_API_BASE_URL;
-  const API_FILE_BASE: string = import.meta.env.VITE_API_FILE_BASE_URL;
-
+const crmKanbanBoard2 = () => {
   // Sample status data
   const statuses: CrmStatusDto[] = [
-    { id: 1, statusName: 'Initiated' },
-    { id: 2, statusName: 'RequestedForQuote' },
-    { id: 3, statusName: 'InProgress' },
-    { id: 4, statusName: 'ForwardedToCommercialDepartment ' },
-    { id: 5, statusName: 'Negotiation' },
-    { id: 6, statusName: 'Completed' },
-    { id: 7, statusName: 'Closed' },
-    { id: 8, statusName: 'Lost' },
+    { id: 1, statusName: 'Lead' },
+    { id: 2, statusName: 'Contacted' },
+    { id: 3, statusName: 'Qualified' },
+    { id: 4, statusName: 'Proposal' },
+    { id: 5, statusName: 'Closed Won' },
+    { id: 6, statusName: 'Closed Lost' },
   ];
   
   // Sample customer data
-  const customers: CustomerDto[] = [
-    { id: 1, name: 'Acme Corporation', email: 'contact@acme.com', phone: '123-456-7890' },
-    { id: 2, name: 'TechSolutions Inc', email: 'info@techsolutions.com', phone: '234-567-8901' },
-    { id: 3, name: 'Global Industries', email: 'sales@globalindustries.com', phone: '345-678-9012' },
-    { id: 4, name: 'Sunrise Enterprises', email: 'hello@sunrise.com', phone: '456-789-0123' },
-    { id: 5, name: 'Quantum Systems', email: 'support@quantum.com', phone: '567-890-1234' },
-    { id: 6, name: 'Momentum Partners', email: 'partners@momentum.com', phone: '678-901-2345' },
-    { id: 7, name: 'Apex Solutions', email: 'info@apex.com', phone: '789-012-3456' },
-    { id: 8, name: 'Horizon Group', email: 'sales@horizon.com', phone: '890-123-4567' },
-    { id: 9, name: 'Pioneer Technologies', email: 'hello@pioneer.com', phone: '901-234-5678' },
-    { id: 10, name: 'Summit Enterprises', email: 'info@summit.com', phone: '012-345-6789' },
-    { id: 11, name: 'Atlantic Partners', email: 'deals@atlantic.com', phone: '123-456-7890' },
+//   const customers: CustomerDto[] = [
+//     { id: 1, name: 'Acme Corporation', email: 'contact@acme.com', phone: '123-456-7890' },
+//     { id: 2, name: 'TechSolutions Inc', email: 'info@techsolutions.com', phone: '234-567-8901' },
+//     { id: 3, name: 'Global Industries', email: 'sales@globalindustries.com', phone: '345-678-9012' },
+//     { id: 4, name: 'Sunrise Enterprises', email: 'hello@sunrise.com', phone: '456-789-0123' },
+//     { id: 5, name: 'Quantum Systems', email: 'support@quantum.com', phone: '567-890-1234' },
+//     { id: 6, name: 'Momentum Partners', email: 'partners@momentum.com', phone: '678-901-2345' },
+//     { id: 7, name: 'Apex Solutions', email: 'info@apex.com', phone: '789-012-3456' },
+//     { id: 8, name: 'Horizon Group', email: 'sales@horizon.com', phone: '890-123-4567' },
+//     { id: 9, name: 'Pioneer Technologies', email: 'hello@pioneer.com', phone: '901-234-5678' },
+//     { id: 10, name: 'Summit Enterprises', email: 'info@summit.com', phone: '012-345-6789' },
+//     { id: 11, name: 'Atlantic Partners', email: 'deals@atlantic.com', phone: '123-456-7890' },
+//   ];
+  
+  // Sample communication start modes
+  const communicationStartModes: CommunicationStartModeDto[] = [
+    { id: 1, modeName: 'Phone Call' },
+    { id: 2, modeName: 'Email' },
+    { id: 3, modeName: 'Website Form' },
+    { id: 4, modeName: 'Walk-in' },
+    { id: 5, modeName: 'Referral' },
+    { id: 6, modeName: 'Social Media' },
   ];
   
-  // Sample service types
-  // const serviceTypes: ServiceTypeDto[] = [
-  //   { id: 1, name: 'Consulting' },
-  //   { id: 2, name: 'Software Development' },
-  //   { id: 3, name: 'Hardware Supply' },
-  //   { id: 4, name: 'Maintenance' },
-  //   { id: 5, name: 'Training' },
-  // ];
+  // Sample available services
+  const availableServices = [
+    'Consulting',
+    'Software Development',
+    'Hardware Supply',
+    'System Integration',
+    'Maintenance',
+    'Training',
+    'Technical Support',
+    'Cloud Services'
+  ];
   
-  // Sample deals data
-  // const sampleDeals: CrmDealDto[] = [
-  //   {
-  //     id: 1,
-  //     cRMRefNo: 'CRM-2025-001',
-  //     customer: customers[0],
-  //     customerId: 1,
-  //     serviceType: serviceTypes[0],
-  //     serviceTypeId: 1,
-  //     assignedEmployeeId: 101,
-  //     status: statuses[0],
-  //     statusId: 1,
-  //     createdDate: '2025-03-01T10:00:00Z',
-  //     updatedDate: null,
-  //     value: '$12,500'
-  //   },
-  //   {
-  //     id: 2,
-  //     cRMRefNo: 'CRM-2025-002',
-  //     customer: customers[1],
-  //     customerId: 2,
-  //     serviceType: serviceTypes[1],
-  //     serviceTypeId: 2,
-  //     assignedEmployeeId: 102,
-  //     status: statuses[0],
-  //     statusId: 1,
-  //     createdDate: '2025-03-02T11:00:00Z',
-  //     updatedDate: null,
-  //     value: '$8,750'
-  //   },
-  //   {
-  //     id: 3,
-  //     cRMRefNo: 'CRM-2025-003',
-  //     customer: customers[2],
-  //     customerId: 3,
-  //     serviceType: serviceTypes[2],
-  //     serviceTypeId: 3,
-  //     assignedEmployeeId: 103,
-  //     status: statuses[0],
-  //     statusId: 1,
-  //     createdDate: '2025-03-03T09:00:00Z',
-  //     updatedDate: null,
-  //     value: '$15,200'
-  //   },
-  //   {
-  //     id: 4,
-  //     cRMRefNo: 'CRM-2025-004',
-  //     customer: customers[3],
-  //     customerId: 4,
-  //     serviceType: serviceTypes[0],
-  //     serviceTypeId: 1,
-  //     assignedEmployeeId: 104,
-  //     status: statuses[1],
-  //     statusId: 2,
-  //     createdDate: '2025-03-04T14:00:00Z',
-  //     updatedDate: '2025-03-10T09:00:00Z',
-  //     value: '$9,300'
-  //   },
-  //   {
-  //     id: 5,
-  //     cRMRefNo: 'CRM-2025-005',
-  //     customer: customers[4],
-  //     customerId: 5,
-  //     serviceType: serviceTypes[3],
-  //     serviceTypeId: 4,
-  //     assignedEmployeeId: 105,
-  //     status: statuses[1],
-  //     statusId: 2,
-  //     createdDate: '2025-03-05T16:00:00Z',
-  //     updatedDate: '2025-03-12T11:00:00Z',
-  //     value: '$11,000'
-  //   },
-  //   {
-  //     id: 6,
-  //     cRMRefNo: 'CRM-2025-006',
-  //     customer: customers[5],
-  //     customerId: 6,
-  //     serviceType: serviceTypes[1],
-  //     serviceTypeId: 2,
-  //     assignedEmployeeId: 106,
-  //     status: statuses[2],
-  //     statusId: 3,
-  //     createdDate: '2025-02-15T10:00:00Z',
-  //     updatedDate: '2025-03-15T14:00:00Z',
-  //     value: '$23,000'
-  //   },
-  //   {
-  //     id: 7,
-  //     cRMRefNo: 'CRM-2025-007',
-  //     customer: customers[6],
-  //     customerId: 7,
-  //     serviceType: serviceTypes[4],
-  //     serviceTypeId: 5,
-  //     assignedEmployeeId: 107,
-  //     status: statuses[2],
-  //     statusId: 3,
-  //     createdDate: '2025-02-20T09:00:00Z',
-  //     updatedDate: '2025-03-18T16:00:00Z',
-  //     value: '$17,500'
-  //   },
-  //   {
-  //     id: 8,
-  //     cRMRefNo: 'CRM-2025-008',
-  //     customer: customers[7],
-  //     customerId: 8,
-  //     serviceType: serviceTypes[0],
-  //     serviceTypeId: 1,
-  //     assignedEmployeeId: 108,
-  //     status: statuses[3],
-  //     statusId: 4,
-  //     createdDate: '2025-02-25T11:00:00Z',
-  //     updatedDate: '2025-03-20T10:00:00Z',
-  //     value: '$42,000'
-  //   },
-  //   {
-  //     id: 9,
-  //     cRMRefNo: 'CRM-2025-009',
-  //     customer: customers[8],
-  //     customerId: 9,
-  //     serviceType: serviceTypes[2],
-  //     serviceTypeId: 3,
-  //     assignedEmployeeId: 109,
-  //     status: statuses[3],
-  //     statusId: 4,
-  //     createdDate: '2025-03-01T15:00:00Z',
-  //     updatedDate: '2025-03-22T09:00:00Z',
-  //     value: '$31,400'
-  //   },
-  //   {
-  //     id: 10,
-  //     cRMRefNo: 'CRM-2025-010',
-  //     customer: customers[9],
-  //     customerId: 10,
-  //     serviceType: serviceTypes[1],
-  //     serviceTypeId: 2,
-  //     assignedEmployeeId: 110,
-  //     status: statuses[4],
-  //     statusId: 5,
-  //     createdDate: '2025-02-10T13:00:00Z',
-  //     updatedDate: '2025-04-01T14:00:00Z',
-  //     value: '$29,800'
-  //   },
-  //   {
-  //     id: 11,
-  //     cRMRefNo: 'CRM-2025-011',
-  //     customer: customers[10],
-  //     customerId: 11,
-  //     serviceType: serviceTypes[3],
-  //     serviceTypeId: 0,
-  //     assignedEmployeeId: 111,
-  //     status: statuses[4],
-  //     statusId: 5,
-  //     createdDate: '2025-02-15T10:00:00Z',
-  //     updatedDate: '2025-04-05T11:00:00Z',
-  //     value: '$19,500'
-  //   },
-  // ];
-
-  const sampleDeals: CrmDealDto[] = [];
+  // Sample deals data with new structure
+//   const sampleDeals: CrmDealDto[] = [
+//     {
+//       id: 1,
+//       referenceNumber: 'CRM-2025-001',
+//       customerId: 1,
+//       communicationStartModeId: 1,
+//       communicationStartDate: '2025-03-01T10:00:00Z',
+//       requestedServices: ['Consulting', 'Software Development'],
+//       recordingPersonnel: 'John Smith',
+//       customer: customers[0],
+//       communicationStartMode: communicationStartModes[0],
+//       status: statuses[0],
+//       statusId: 1,
+//       value: '$12,500',
+//       createdDate: '2025-03-01T10:00:00Z',
+//       updatedDate: null
+//     },
+//     {
+//       id: 2,
+//       referenceNumber: 'CRM-2025-002',
+//       customerId: 2,
+//       communicationStartModeId: 2,
+//       communicationStartDate: '2025-03-02T11:00:00Z',
+//       requestedServices: ['Software Development'],
+//       recordingPersonnel: 'Jane Doe',
+//       customer: customers[1],
+//       communicationStartMode: communicationStartModes[1],
+//       status: statuses[0],
+//       statusId: 1,
+//       value: '$8,750',
+//       createdDate: '2025-03-02T11:00:00Z',
+//       updatedDate: null
+//     },
+//     {
+//       id: 3,
+//       referenceNumber: 'CRM-2025-003',
+//       customerId: 3,
+//       communicationStartModeId: 3,
+//       communicationStartDate: '2025-03-03T09:00:00Z',
+//       requestedServices: ['Hardware Supply', 'System Integration'],
+//       recordingPersonnel: 'Mike Johnson',
+//       customer: customers[2],
+//       communicationStartMode: communicationStartModes[2],
+//       status: statuses[0],
+//       statusId: 1,
+//       value: '$15,200',
+//       createdDate: '2025-03-03T09:00:00Z',
+//       updatedDate: null
+//     },
+//     {
+//       id: 4,
+//       referenceNumber: 'CRM-2025-004',
+//       customerId: 4,
+//       communicationStartModeId: 4,
+//       communicationStartDate: '2025-03-04T14:00:00Z',
+//       requestedServices: ['Consulting', 'Training'],
+//       recordingPersonnel: 'Sarah Wilson',
+//       customer: customers[3],
+//       communicationStartMode: communicationStartModes[3],
+//       status: statuses[1],
+//       statusId: 2,
+//       value: '$9,300',
+//       createdDate: '2025-03-04T14:00:00Z',
+//       updatedDate: '2025-03-10T09:00:00Z'
+//     },
+//     {
+//       id: 5,
+//       referenceNumber: 'CRM-2025-005',
+//       customerId: 5,
+//       communicationStartModeId: 5,
+//       communicationStartDate: '2025-03-05T16:00:00Z',
+//       requestedServices: ['Maintenance', 'Technical Support'],
+//       recordingPersonnel: 'David Brown',
+//       customer: customers[4],
+//       communicationStartMode: communicationStartModes[4],
+//       status: statuses[1],
+//       statusId: 2,
+//       value: '$11,000',
+//       createdDate: '2025-03-05T16:00:00Z',
+//       updatedDate: '2025-03-12T11:00:00Z'
+//     },
+//     {
+//       id: 6,
+//       referenceNumber: 'CRM-2025-006',
+//       customerId: 6,
+//       communicationStartModeId: 2,
+//       communicationStartDate: '2025-02-15T10:00:00Z',
+//       requestedServices: ['Software Development', 'Cloud Services'],
+//       recordingPersonnel: 'Lisa Garcia',
+//       customer: customers[5],
+//       communicationStartMode: communicationStartModes[1],
+//       status: statuses[2],
+//       statusId: 3,
+//       value: '$23,000',
+//       createdDate: '2025-02-15T10:00:00Z',
+//       updatedDate: '2025-03-15T14:00:00Z'
+//     },
+//     {
+//       id: 7,
+//       referenceNumber: 'CRM-2025-007',
+//       customerId: 7,
+//       communicationStartModeId: 1,
+//       communicationStartDate: '2025-02-20T09:00:00Z',
+//       requestedServices: ['Training', 'Technical Support'],
+//       recordingPersonnel: 'Robert Davis',
+//       customer: customers[6],
+//       communicationStartMode: communicationStartModes[0],
+//       status: statuses[2],
+//       statusId: 3,
+//       value: '$17,500',
+//       createdDate: '2025-02-20T09:00:00Z',
+//       updatedDate: '2025-03-18T16:00:00Z'
+//     },
+//     {
+//       id: 8,
+//       referenceNumber: 'CRM-2025-008',
+//       customerId: 8,
+//       communicationStartModeId: 6,
+//       communicationStartDate: '2025-02-25T11:00:00Z',
+//       requestedServices: ['Consulting', 'System Integration'],
+//       recordingPersonnel: 'Emma Martinez',
+//       customer: customers[7],
+//       communicationStartMode: communicationStartModes[5],
+//       status: statuses[3],
+//       statusId: 4,
+//       value: '$42,000',
+//       createdDate: '2025-02-25T11:00:00Z',
+//       updatedDate: '2025-03-20T10:00:00Z'
+//     },
+//     {
+//       id: 9,
+//       referenceNumber: 'CRM-2025-009',
+//       customerId: 9,
+//       communicationStartModeId: 3,
+//       communicationStartDate: '2025-03-01T15:00:00Z',
+//       requestedServices: ['Hardware Supply', 'Maintenance'],
+//       recordingPersonnel: 'Tom Anderson',
+//       customer: customers[8],
+//       communicationStartMode: communicationStartModes[2],
+//       status: statuses[3],
+//       statusId: 4,
+//       value: '$31,400',
+//       createdDate: '2025-03-01T15:00:00Z',
+//       updatedDate: '2025-03-22T09:00:00Z'
+//     },
+//     {
+//       id: 10,
+//       referenceNumber: 'CRM-2025-010',
+//       customerId: 10,
+//       communicationStartModeId: 1,
+//       communicationStartDate: '2025-02-10T13:00:00Z',
+//       requestedServices: ['Software Development', 'Cloud Services'],
+//       recordingPersonnel: 'Anna Taylor',
+//       customer: customers[9],
+//       communicationStartMode: communicationStartModes[0],
+//       status: statuses[4],
+//       statusId: 5,
+//       value: '$29,800',
+//       createdDate: '2025-02-10T13:00:00Z',
+//       updatedDate: '2025-04-01T14:00:00Z'
+//     },
+//     {
+//       id: 11,
+//       referenceNumber: 'CRM-2025-011',
+//       customerId: 11,
+//       communicationStartModeId: 2,
+//       communicationStartDate: '2025-02-15T10:00:00Z',
+//       requestedServices: ['Maintenance', 'Technical Support'],
+//       recordingPersonnel: 'Chris White',
+//       customer: customers[10],
+//       communicationStartMode: communicationStartModes[1],
+//       status: statuses[4],
+//       statusId: 5,
+//       value: '$19,500',
+//       createdDate: '2025-02-15T10:00:00Z',
+//       updatedDate: '2025-04-05T11:00:00Z'
+//     },
+//   ];
   
   // Generate initial columns based on statuses
   const generateInitialColumns = (): KanbanColumn[] => {
@@ -308,31 +345,19 @@ const CRMKanbanBoard = () => {
   });
   
   const [newCard, setNewCard] = useState<Partial<CrmDealDto>>({
-    // cRMRefNo: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-    cRMRefNo: '',
+    referenceNumber: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
     customerId: 0,
-    serviceTypeId: 0,
-    value: '',
-    communicationStartModeId: 0,
+    communicationStartModeId: 1,
     communicationStartDate: new Date().toISOString(),
-    requestedServices : [],
-    recordingPersonnel : '',
+    requestedServices: [],
+    recordingPersonnel: '',
+    value: '',
   });
 
-  // {
-  //   "referenceNumber": "string",
-  //   "customerId": 0,
-  //   "communicationStartModeId": 0,
-  //   "communicationStartDate": "2025-07-25T18:56:40.988Z",
-  //   "requestedServices": [
-  //     "string"
-  //   ],
-  //   "recordingPersonnel": "string"
-  // }
-
-  const [customerData, setCustomerData] = useState <CustomerDto | [] > ([]);
-  const [serviceTypes, setServiceTypes] = useState<ServiceTypeDto[] | [] >([]);
-  const [communicationModes , setCommunicationModes] = useState<any[]>([]); // Adjust type as needed
+const [customerData, setCustomerData] = useState <CustomerDto | [] > ([]);
+const [serviceTypes, setServiceTypes] = useState<ServiceTypeDto[] | [] >([]);
+const [communicationModes , setCommunicationModes] = useState<any[]>([]); // Adjust type as needed
+  
   // Initialize columns from sample data
   useEffect(() => {
     setColumns(generateInitialColumns());
@@ -357,32 +382,7 @@ const CRMKanbanBoard = () => {
     };
 
     fetchAll();
-
-    // const fetchCustomers = async () => {
-    //   // setLoading(true);
-    //   // setError(null);
-      
-    //   try {
-    //     const response = await fetch(`${API_BASE}/Core/Customers`);
-        
-    //     if (!response.ok) {
-    //       throw new Error(`Failed to fetch customers: ${response.status}`);
-    //     }
-        
-    //     const data = await response.json();
-    //     setCustomerData(data);
-    //   } catch (err) {
-    //     console.error('Error fetching customers:', err);
-    //     // setError('Failed to load customers. Please try again later.');
-    //   } finally {
-    //     // setLoading(false);
-    //   }
-    // };
-  
-    // fetchCustomers();
   }, []);
-
-  console.log('#crmKanbanBoard customerData', customerData);
 
   // Handle card drag start
   const handleDragStart = (e: React.DragEvent, columnId: number, cardId: number) => {
@@ -419,9 +419,9 @@ const CRMKanbanBoard = () => {
     const statusHistory: CrmStatusHistoryDto = {
       id: Math.floor(Math.random() * 1000),
       deal: card,
-      dealId: card.id,
-      previousStatus: { id: card.statusId, statusName: sourceColumn.title },
-      previousStatusId: card.statusId,
+      dealId: card.id || 0,
+      previousStatus: { id: card.statusId || 0, statusName: sourceColumn.title },
+      previousStatusId: card.statusId || 0,
       newStatus: { id: targetColumn.id, statusName: targetColumn.title },
       newStatusId: targetColumn.id,
       notes: `Status changed from ${sourceColumn.title} to ${targetColumn.title}`,
@@ -455,11 +455,6 @@ const CRMKanbanBoard = () => {
     setDraggingCard(null);
   };
 
-  // Handler for when a card is dragged over a column
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
-
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -471,8 +466,8 @@ const CRMKanbanBoard = () => {
 
     return columns.map(column => {
       const filteredCards = column.cards.filter(card => 
-        card.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        card.cRMRefNo.toLowerCase().includes(searchTerm.toLowerCase())
+        card.customer?.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        card.referenceNumber.toLowerCase().includes(searchTerm.toLowerCase())
       );
       
       return {
@@ -490,45 +485,45 @@ const CRMKanbanBoard = () => {
   };
 
   // Handle input change for new card form
-  const handleNewCardChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleNewCardChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-
-    // console.log('#crmKanbanBoard - handleNewCardChange: ', name, value);
     
-    // if (name === 'customerId' || name === 'serviceTypeId') {
-    //   setNewCard({ ...newCard, [name]: parseInt(value) });
-    // } else {
-    //   setNewCard({ ...newCard, [name]: value });
-    // }
-
-    // fetch CRM REF. Number
-    // try to fetch also 
-    try {
-        const response : any = await fetch(`${API_BASE}/Crm/CrmReferenceNumber?customerId=${value}`);
-
-        const data = await response.text();
-        if (!response.ok) {
-            throw new Error(`Failed to fetch CrmReferenceNumber data: ${response.status}`);
-        }
-        setNewCard({ ...newCard, cRMRefNo: String(data), customerId: parseInt(value) });
-
-    } catch (error) {
-        console.error("Error fetching data:", error);
+    if (name === 'customerId' || name === 'communicationStartModeId') {
+      setNewCard({ ...newCard, [name]: parseInt(value) });
+    } else if (name === 'communicationStartDate') {
+      setNewCard({ ...newCard, [name]: new Date(value).toISOString() });
+    } else if (name === 'requestedServices') {
+      // Handle multiple service selection
+      const checkbox = e.target as HTMLInputElement;
+      const currentServices = newCard.requestedServices || [];
+      
+      if (checkbox.checked) {
+        setNewCard({ ...newCard, requestedServices: [...currentServices, value] });
+      } else {
+        setNewCard({ 
+          ...newCard, 
+          requestedServices: currentServices.filter(service => service !== value) 
+        });
+      }
+    } else {
+      setNewCard({ ...newCard, [name]: value });
     }
   };
 
   // Save new card
   const handleSaveCard = () => {
     if (!newCard.customerId || newCard.customerId === 0) return;
+    if (!newCard.recordingPersonnel) return;
+    if (!newCard.requestedServices || newCard.requestedServices.length === 0) return;
     if (!newCardColumn) return;
     
     // Find customer by ID
     const customer = customers.find(c => c.id === newCard.customerId);
     if (!customer) return;
     
-    // Find service type by ID
-    const serviceType = serviceTypes.find(s => s.id === newCard.serviceTypeId);
-    if (!serviceType) return;
+    // Find communication start mode by ID
+    const communicationStartMode = communicationStartModes.find(c => c.id === newCard.communicationStartModeId);
+    if (!communicationStartMode) return;
     
     // Find status
     const status = statuses.find(s => s.id === newCardColumn);
@@ -539,12 +534,15 @@ const CRMKanbanBoard = () => {
     // Create new CrmDealDto
     const newDealCard: CrmDealDto = {
       id: Math.floor(Math.random() * 1000) + 100,
-      cRMRefNo: newCard.cRMRefNo || `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      referenceNumber: newCard.referenceNumber || `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      customerId: newCard.customerId,
+      communicationStartModeId: newCard.communicationStartModeId || 1,
+      communicationStartDate: newCard.communicationStartDate || now,
+      requestedServices: newCard.requestedServices || [],
+      recordingPersonnel: newCard.recordingPersonnel,
+      // Additional fields for UI
       customer: customer,
-      customerId: customer.id,
-      serviceType: serviceType,
-      serviceTypeId: serviceType.id,
-      assignedEmployeeId: Math.floor(Math.random() * 10) + 100,
+      communicationStartMode: communicationStartMode,
       status: status,
       statusId: status.id,
       createdDate: now,
@@ -566,9 +564,12 @@ const CRMKanbanBoard = () => {
     setColumns(updatedColumns);
     setShowCardForm(false);
     setNewCard({
-      cRMRefNo: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      referenceNumber: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
       customerId: 0,
-      serviceTypeId: 0,
+      communicationStartModeId: 1,
+      communicationStartDate: new Date().toISOString(),
+      requestedServices: [],
+      recordingPersonnel: '',
       value: '',
     });
     setNewCardColumn(null);
@@ -578,9 +579,12 @@ const CRMKanbanBoard = () => {
   const handleCancelAddCard = () => {
     setShowCardForm(false);
     setNewCard({
-      cRMRefNo: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      referenceNumber: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
       customerId: 0,
-      serviceTypeId: 0,
+      communicationStartModeId: 1,
+      communicationStartDate: new Date().toISOString(),
+      requestedServices: [],
+      recordingPersonnel: '',
       value: '',
     });
     setNewCardColumn(null);
@@ -619,8 +623,8 @@ const CRMKanbanBoard = () => {
     const activity: CrmActivityDto = {
       id: Math.floor(Math.random() * 1000) + 200,
       deal: selectedDeal,
-      dealId: selectedDeal.id,
-      customer: selectedDeal.customer,
+      dealId: selectedDeal.id || 0,
+      customer: selectedDeal.customer || { id: 0, name: '' },
       customerId: selectedDeal.customerId,
       activityType: { id: newActivity.activityTypeId || 1, activityName: getActivityTypeName(newActivity.activityTypeId || 1) },
       activityTypeId: newActivity.activityTypeId || 1,
@@ -658,10 +662,10 @@ const CRMKanbanBoard = () => {
   // Calculate days in stage for a deal
   const getDaysInStage = (deal: CrmDealDto): number => {
     if (!deal.updatedDate) {
-      // If deal hasn't moved stages, calculate from created date
-      const createdDate = new Date(deal.createdDate);
+      // If deal hasn't moved stages, calculate from created date or communication start date
+      const startDate = new Date(deal.createdDate || deal.communicationStartDate);
       const today = new Date();
-      return Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+      return Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     } else {
       // If deal has moved stages, calculate from updated date
       const updatedDate = new Date(deal.updatedDate);
@@ -684,7 +688,7 @@ const CRMKanbanBoard = () => {
     }, 0);
     
     // Format as currency
-    return `${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    return `$${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   };
 
   return (
@@ -744,10 +748,10 @@ const CRMKanbanBoard = () => {
                     key={card.id}
                     className="bg-white p-3 rounded-md shadow-sm cursor-grab hover:shadow-md transition-shadow"
                     draggable
-                    onDragStart={(e) => handleDragStart(e, column.id, card.id)}
+                    onDragStart={(e) => handleDragStart(e, column.id, card.id || 0)}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium text-gray-800">{card.customer.name}</h4>
+                      <h4 className="font-medium text-gray-800">{card.customer?.name}</h4>
                       <div className="flex space-x-2">
                         <button 
                           className="text-gray-400 hover:text-gray-600"
@@ -760,8 +764,21 @@ const CRMKanbanBoard = () => {
                         </button>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500 mb-2">{card.cRMRefNo}</p>
-                    <p className="text-sm text-gray-600 mb-1">{card.serviceType.name}</p>
+                    <p className="text-xs text-gray-500 mb-2">{card.referenceNumber}</p>
+                    <div className="mb-2">
+                      <p className="text-xs text-gray-500 mb-1">Services:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {card.requestedServices.slice(0, 2).map((service, idx) => (
+                          <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                            {service}
+                          </span>
+                        ))}
+                        {card.requestedServices.length > 2 && (
+                          <span className="text-xs text-gray-400">+{card.requestedServices.length - 2} more</span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-600 mb-2">by {card.recordingPersonnel}</p>
                     <div className="flex justify-between items-center mt-2">
                       <span className="text-sm font-medium text-green-600">{card.value}</span>
                       <span className="text-xs text-gray-500">{getDaysInStage(card)} days</span>
@@ -773,39 +790,68 @@ const CRMKanbanBoard = () => {
                 {showCardForm && newCardColumn === column.id && (
                   <div className="bg-white p-3 rounded-md shadow border-2 border-blue-500">
                     <div className="space-y-2">
-                      
+                      <input
+                        type="text"
+                        name="referenceNumber"
+                        placeholder="Reference #"
+                        className="w-full p-2 border rounded text-sm"
+                        value={newCard.referenceNumber}
+                        onChange={handleNewCardChange}
+                      />
                       <select
                         name="customerId"
                         className="w-full p-2 border rounded text-sm"
                         value={newCard.customerId || 0}
                         onChange={handleNewCardChange}
                       >
-                        <option value={0}>Select Customer...</option>
+                        <option value={0}>Select customer...</option>
                         {customerData.map(customer => (
                           <option key={customer.id} value={customer.id}>{customer.name}</option>
                         ))}
                       </select>
-
-                      <input
-                        type="text"
-                        name="cRMRefNo"
-                        placeholder="Reference #"
-                        className="w-full p-2 border rounded text-sm"
-                        value={newCard.cRMRefNo}
-                        onChange={handleNewCardChange}
-                      />
-
                       <select
-                        name="serviceTypeId"
+                        name="communicationStartModeId"
                         className="w-full p-2 border rounded text-sm"
-                        value={newCard.serviceTypeId || 0}
+                        value={newCard.communicationStartModeId}
                         onChange={handleNewCardChange}
                       >
-                        <option value={0}>Select Service ...</option>
-                        {serviceTypes.map(service => (
-                          <option key={service.id} value={service.id}>{service.name}</option>
+                        {communicationModes.map(mode => (
+                          <option key={mode.id} value={mode.id}>{mode.modeName}</option>
                         ))}
                       </select>
+                      <input
+                        type="datetime-local"
+                        name="communicationStartDate"
+                        className="w-full p-2 border rounded text-sm"
+                        value={newCard.communicationStartDate ? new Date(newCard.communicationStartDate).toISOString().slice(0, 16) : ''}
+                        onChange={handleNewCardChange}
+                      />
+                      <div>
+                        <p className="text-sm text-gray-700 mb-2">Requested Services:</p>
+                        <div className="space-y-1 max-h-24 overflow-y-auto">
+                          {ServiceTypes.map(service => (
+                            <label key={service} className="flex items-center">
+                              <input
+                                type="checkbox"
+                                name="requestedServices"
+                                value={service}
+                                checked={newCard.requestedServices?.includes(service) || false}
+                                onChange={handleNewCardChange}
+                                className="mr-2"
+                              />
+                              <span className="text-sm">{service}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <input
+                        type="text"
+                        name="recordingPersonnel"
+                        placeholder="Recording personnel"
+                        className="w-full p-2 border rounded text-sm"
+                        value={newCard.recordingPersonnel}
+                        onChange={handleNewCardChange}
+                      />
                       <input
                         type="text"
                         name="value"
@@ -849,8 +895,8 @@ const CRMKanbanBoard = () => {
             </div>
             
             <div className="mb-2">
-              <p className="text-sm font-medium text-gray-700">{selectedDeal.customer.name}</p>
-              <p className="text-xs text-gray-500">{selectedDeal.cRMRefNo}</p>
+              <p className="text-sm font-medium text-gray-700">{selectedDeal.customer?.name}</p>
+              <p className="text-xs text-gray-500">{selectedDeal.referenceNumber}</p>
             </div>
             
             <div className="space-y-4 mb-4">
@@ -962,4 +1008,4 @@ const CRMKanbanBoard = () => {
   );
 };
 
-export default CRMKanbanBoard;
+export default crmKanbanBoard2;

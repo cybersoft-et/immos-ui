@@ -5,29 +5,32 @@ export interface CustomerDto {
   phone?: string;
 }
 
-export interface ServiceTypeDto {
-  id: number;
-  name: string;
-}
-
 export interface CrmStatusDto {
   id: number;
   statusName: string;
 }
 
-export interface CrmDealDto {
+export interface CommunicationStartModeDto {
   id: number;
-  cRMRefNo: string;
-  customer: CustomerDto;
+  name: string;
+}
+
+export interface CrmDealDto {
+  id?: number;
+  referenceNumber: string;
   customerId: number;
-  serviceType: ServiceTypeDto;
-  serviceTypeId: number;
-  assignedEmployeeId: number;
-  status: CrmStatusDto;
-  statusId: number;
-  createdDate: string;
-  updatedDate: string | null;
+  communicationStartModeId: number;
+  communicationStartDate: string;
+  requestedServices: string[];
+  recordingPersonnel: string;
+  // Additional fields for UI purposes
+  customer?: CustomerDto;
+  communicationStartMode?: CommunicationStartModeDto;
+  status?: CrmStatusDto;
+  statusId?: number;
   value?: string;
+  createdDate?: string;
+  updatedDate?: string | null;
 }
 
 export interface CrmActivityTypeDto {
@@ -65,3 +68,6 @@ export interface KanbanColumn {
   id: number;
   title: string;
   count: number;
+  color: string;
+  cards: CrmDealDto[];
+}

@@ -305,8 +305,13 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
         console.log('#CustomerForm - fetchDocuments - Fetching by documentId: ', documentId);
         response = await fetch(`${API_BASE}/documents/${documentId}`);
       }
-      else{
-        response = await fetch(`${API_BASE}/documents`);
+      // else{
+      //   response = await fetch(`${API_BASE}/documents`);
+      // }
+
+      if(response === null) {
+        throw new Error('No documents found for the given customer or document ID.');
+       
       }
       
       if (!response.ok) {
@@ -315,20 +320,67 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                   
       const data = await response.json();
 
-      const formattedDocs = data.map(doc => ({
-        id: doc.id,
-        documentTypeId: lookuData.documentTypes.find(type => type.id === doc.documentTypeId)?.name || doc.documentTypeId,
-        documentId: doc.documentId,
-        name: doc.name || 'Untitled',
-        documentType: doc.name || 'Unknown',
-        description: doc.description || 'No description',
-        size: doc.size || 0,
-        createDate: doc.createdDate || new Date().toLocaleDateString(),
-        contentType : doc.contentType || 'application/octet-stream',
-        documentPath : doc.document.documentPath ? `${API_FILE_BASE}/${doc.document.documentPath}` : '' ,
-      }));
-      setUploadedDocuments(formattedDocs);
-      console.log("CustomerForm - fetchDocuments - Documents loaded successfully:", data);
+      console.log('#CustomerForm - fetchDocuments - Fetched documents: ', data);
+      console.log('#CustomerForm - fetchDocuments - lookuData: ', lookuData);
+
+      if(data.documents && data.documents.length > 0) {
+        
+        const formattedDocs = data.documents.map(doc => ({
+          documentId: doc.documentId,
+          name: doc.document.name || 'Untitled',
+          documentType: doc.document.name || 'Unknown',
+          description: doc.document.description || 'No description',
+          createDate: doc.document.createdDate || new Date().toLocaleDateString(),
+          size : doc.document.size || 0,
+          id: doc.documentId,
+          documentTypeId: lookuData.documentTypes.find(type => type.id === doc.document.documentTypeId)?.name || doc.document.documentTypeId,
+          contentType: doc.document.contentType || 'application/octet-stream',
+          documentPath : doc.document.documentPath ? `${API_FILE_BASE}/${doc.document.documentPath}` : '' ,
+        }));
+        console.log('#CustomerForm - fetchDocuments -M- formattedDocs: ', formattedDocs);
+        
+        setUploadedDocuments(formattedDocs);
+        console.log("CustomerForm - fetchDocuments -M- Documents loaded successfully:", data);
+
+      }else{
+
+        if(data.length > 1){
+          const formattedDocs = data.map(doc => ({
+            id: doc.id,
+            documentTypeId: lookuData.documentTypes.find(type => type.id === doc.documentTypeId)?.name || doc.documentTypeId,
+            documentId: doc.documentId,
+            name: doc.name || 'Untitled',
+            documentType: doc.name || 'Unknown',
+            description: doc.description || 'No description',
+            size: doc.size || 0,
+            createDate: doc.createdDate || new Date().toLocaleDateString(),
+            contentType : doc.contentType || 'application/octet-stream',
+            documentPath : '' ,
+          }));
+
+          setUploadedDocuments(formattedDocs);
+          console.log("CustomerForm - fetchDocuments -M- Documents loaded successfully:", data);
+        }else{
+
+          const formattedDocs = {
+            id: data.id,
+            documentTypeId: lookuData.documentTypes.find(type => type.id === data.documentTypeId)?.name || data.documentTypeId,
+            documentId: data.documentId,
+            name: data.name || 'Untitled',
+            documentType: data.name || 'Unknown',
+            description: data.description || 'No description',
+            size: data.size || 0,
+            createDate: data.createdDate || new Date().toLocaleDateString(),
+            contentType : data.contentType || 'application/octet-stream',
+            documentPath : '' ,
+          };
+
+          setUploadedDocuments([formattedDocs]);
+          console.log("CustomerForm - fetchDocuments -SINGLE- Documents loaded successfully:", data);
+
+        }
+      }
+      
       
       
     } catch (error) {
@@ -387,7 +439,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       
       setCustomerType('Individual');
       setUploadedDocuments([]);
-      fetchDocuments(0);
+      // fetchDocuments(0); // why do we fetch documents with 0?
     }
   }, [editId, isEditing]); 
 
@@ -545,6 +597,8 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       }
       
       const result = await response.json();
+
+      console.log('#CustomerForm - onSubmit: ', data);
       
       setSubmitSuccess(`Customer successfully ${editId ? 'updated' : 'created'}!`);
       
@@ -553,12 +607,24 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
         reset();
         setUploadedDocuments([]);
       }
+
+      // After successful upload, refresh the documents list
+      if(editId !== null && editId !== undefined && editId !== 0) {
+        fetchDocuments(editId); // replaced to fetch docs by ID
+        console.log('#CustomerForm - onSubmit - Fetching documents for Customer: ', editId);
+
+      }else{
+        fetchDocuments(0, result?.id); // replace documents in the form
+        console.log('#CustomerForm - onSubmit - Fetching documents for New User: ', result?.id);
+      }
       
       return result;
+
     } catch (error) {
       console.error(`Error ${editId ? 'updating' : 'creating'} customer:`, error);
       setSubmitError(`Failed to ${editId ? 'update' : 'create'} customer. Please try again.`);
       return null;
+
     } finally {
       setIsSubmitting(false);
     }
@@ -629,6 +695,11 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
 
       const responseData = await response.json();
       console.log('CustomerForm - handleDocumentSubmit - response :', responseData);
+
+      // Append the new document to the uploaded documents state
+      setValue('documents', [{
+        documentId: responseData.id,        
+      }]);
             
       // After successful upload, refresh the documents list
       if(editId !== null && editId !== undefined && editId !== 0) {
@@ -1366,7 +1437,8 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       disabled={isViewOnly}
                       defaultValue={fetchedCustomer?.DocumentTypeId}
-                    >               
+                    >   
+                    <option value={0}>Select DocumentType ...</option>            
                       {lookuData.documentTypes.map((option, index) => (
                         <option key={index} value={option.id}>
                             {option.name}
