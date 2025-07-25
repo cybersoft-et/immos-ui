@@ -9,7 +9,7 @@ const crmKanbanBoard3 = () => {
   const API_BASE: string = import.meta.env.VITE_API_BASE_URL;
   // State for fetched data
   const [customers, setCustomers] = useState<CustomerDto[]>([]);
-  const [serviceTypes, setServiceTypes] = useState<any[]>([]);
+  const [availableServices, setavailableServices] = useState<any[]>([]);
   const [communicationModes, setCommunicationModes] = useState<CommunicationStartModeDto[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,16 +26,16 @@ const crmKanbanBoard3 = () => {
   ];
 
   // Sample available services (this might also come from serviceTypes API)
-  const availableServices = [
-    'Consulting',
-    'Software Development',
-    'Hardware Supply',
-    'System Integration',
-    'Maintenance',
-    'Training',
-    'Technical Support',
-    'Cloud Services'
-  ];
+  // const availableServices = [
+  //   'Consulting',
+  //   'Software Development',
+  //   'Hardware Supply',
+  //   'System Integration',
+  //   'Maintenance',
+  //   'Training',
+  //   'Technical Support',
+  //   'Cloud Services'
+  // ];
   
   // Generate sample deals data (this will be replaced with API call later)
   const generateSampleDeals = (): CrmDealDto[] => {
@@ -156,7 +156,7 @@ const crmKanbanBoard3 = () => {
         ]);
 
         setCustomers(customerRes);        
-        setServiceTypes(serviceTypeRes);
+        setavailableServices(serviceTypeRes);
         setCommunicationModes(communicationModeRes);
 
       } catch (error) {
@@ -172,7 +172,7 @@ const crmKanbanBoard3 = () => {
           { id: 2, name: 'Email' },
           { id: 3, name: 'Website Form' },
         ]);
-        setServiceTypes([
+        setavailableServices([
           { id: 1, name: 'Consulting' },
           { id: 2, name: 'Software Development' },
           { id: 3, name: 'Technical Support' },
@@ -304,14 +304,13 @@ const crmKanbanBoard3 = () => {
             if (!response.ok) {
                 throw new Error(`Failed to fetch CrmReferenceNumber data: ${response.status}`);
             }
-            const currentServices = newCard.requestedServices || [];
-            setNewCard({ ...newCard, referenceNumber: String(data), customerId: parseInt(value) , requestedServices: currentServices.filter(service => service !== value)  });
+            setNewCard({ ...newCard, referenceNumber: String(data), customerId: parseInt(value)  });
 
         } catch (error) {
             console.error("Error fetching data:", error);
         }
         // setNewCard({ ...newCard, [name]: parseInt(value) });
-    } else if (name === 'customerId' || name === 'communicationStartModeId') {
+    } else if (name === 'communicationStartModeId') {
       setNewCard({ ...newCard, [name]: parseInt(value) });
     } else if (name === 'communicationStartDate') {
       setNewCard({ ...newCard, [name]: new Date(value).toISOString() });
@@ -319,6 +318,8 @@ const crmKanbanBoard3 = () => {
       // Handle multiple service selection
       const checkbox = e.target as HTMLInputElement;
       const currentServices = newCard.requestedServices || [];
+
+      console.log('#crmKanbanBoard3 - handleNewCardChange: ', checkbox.checked, currentServices, value);
       
       if (checkbox.checked) {
         setNewCard({ ...newCard, requestedServices: [...currentServices, value] });
@@ -383,7 +384,8 @@ const crmKanbanBoard3 = () => {
       communicationStartModeId: newCard.communicationStartModeId || 0,
       communicationStartDate: newCard.communicationStartDate || now,
       requestedServices: newCard.requestedServices || [],
-      recordingPersonnel: newCard.recordingPersonnel,
+      // recordingPersonnel: newCard.recordingPersonnel,
+      recordingPersonnel: "PAGAdmin"
     };
 
 
@@ -706,16 +708,16 @@ const crmKanbanBoard3 = () => {
                             <p className="text-sm text-gray-700 mb-2">Requested Services:</p>
                             <div className="space-y-1 max-h-24 overflow-y-auto">
                               {availableServices.map(service => (
-                                <label key={service} className="flex items-center">
+                                <label key={service.id} className="flex items-center">
                                   <input
                                     type="checkbox"
                                     name="requestedServices"
-                                    value={service}
-                                    checked={newCard.requestedServices?.includes(service) || false}
+                                    value={service.name}
+                                    checked={newCard.requestedServices?.includes(service.name) || false}
                                     onChange={handleNewCardChange}
                                     className="mr-2"
                                   />
-                                  <span className="text-sm">{service}</span>
+                                  <span className="text-sm">{service.name}</span>
                                 </label>
                               ))}
                             </div>
