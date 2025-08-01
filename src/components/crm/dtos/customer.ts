@@ -26,7 +26,7 @@ export interface CrmDealDto {
   // Additional fields for UI purposes
   customer?: CustomerDto;
   communicationStartMode?: CommunicationStartModeDto | number;
-  status?: CrmStatusDto;
+  status?: CrmStatusDto | string | number | null ;
   statusId?: number;
   value?: string;
   createdDate?: string;
@@ -51,7 +51,16 @@ export interface CrmActivityDto {
   activityDate: string;
   createdDate: string;
   updatedDate: string | null;
+  crmStatus : CrmStatusDto | string | number | null;
+  crmStatusId?: number;
+  recordingPersonnel: string;
+  personContacted: string;
+  communicationMode: string;
+  communicationDetails: string;
+  communicationDate: string;
+  outcome: string | null;
 }
+
 
 export interface CrmStatusHistoryDto {
   id: number;

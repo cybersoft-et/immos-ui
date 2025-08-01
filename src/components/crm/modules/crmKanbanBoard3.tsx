@@ -19,7 +19,7 @@ const crmKanbanBoard3 = () => {
     { id: 1, statusName: 'Initiated' },
     { id: 2, statusName: 'RequestedForQuote' },
     { id: 3, statusName: 'InProgress' },
-    { id: 4, statusName: 'ForwardedToCommercialDepartment ' },
+    { id: 4, statusName: 'ForwardedToCommercialDepartment' },
     { id: 5, statusName: 'Negotiation' },
     { id: 6, statusName: 'Completed' },
     { id: 7, statusName: 'Closed' },
@@ -104,8 +104,8 @@ const crmKanbanBoard3 = () => {
               : (deal.communicationStartMode && 'id' in deal.communicationStartMode
                   ? deal.communicationStartMode.id
                   : 0)))) || { id: 0, name: '' },
-        status: deal.status ? deal.status : statuses.find(s => s.id === deal.statusId) || { id: 0, statusName: '' },
-        statusId: deal.statusId || 1,
+        status: deal.status ? deal.status : statuses.find(s => s.id === deal.statusId)?.statusName || "Initiated" ,
+        statusId: deal.statusId ? statuses.find(s => s.id === deal.statusId)?.statusName || statuses.find(s => s.statusName === deal.status)?.id : 1,
         value: '$12,500',
         createdDate: deal.createdDate || new Date().toISOString(),
         updatedDate: null,
@@ -329,11 +329,12 @@ const crmKanbanBoard3 = () => {
       requestedServices: [],
       recordingPersonnel: '',
       value: '',
+      statusId: columnId,
     });
   };
 
   // Show edit card form
-  const handleEditCard = (card: CrmDealDto) => {
+  const handleEditCard = (card: CrmDealDto , columnId : number) => {
     setEditingCard(card);
     setIsEditMode(true);
     setNewCardColumn(card.statusId || 1);
@@ -347,15 +348,20 @@ const crmKanbanBoard3 = () => {
       requestedServices: card.requestedServices,
       recordingPersonnel: card.recordingPersonnel,
       value: card.value || '',
+      statusId: columnId || card.statusId || 1,
+      status: statuses.find(s => s.id === (columnId || card.statusId))?.statusName || 'Initiated',
     });
+
     const testData = {
-        referenceNumber: card.referenceNumber,
-        customerId: card.customerId,
-        communicationStartModeId: card.communicationStartModeId,
-        communicationStartDate: card.communicationStartDate,
-        requestedServices: card.requestedServices,
-        recordingPersonnel: card.recordingPersonnel,
-        value: card.value || '',
+      referenceNumber: card.referenceNumber,
+      customerId: card.customerId,
+      communicationStartModeId: card.communicationStartModeId,
+      communicationStartDate: card.communicationStartDate,
+      requestedServices: card.requestedServices,
+      recordingPersonnel: card.recordingPersonnel,
+      value: card.value || '',
+      statusId: columnId || card.statusId || 1,
+      status: statuses.find(s => s.id === (columnId || card.statusId))?.statusName || 'Initiated',
     };
 
     console.log('#crmKanbanBoard3 - handleEditCard: DATA', testData);
@@ -415,7 +421,7 @@ const crmKanbanBoard3 = () => {
 
     const customer = customers.find(c => c.id === newCard.customerId);
     const communicationStartMode = communicationModes.find(c => c.id === newCard.communicationStartModeId);
-    const status = statuses.find(s => s.id === newCardColumn);
+    const status = statuses.find(s => s.id === newCardColumn)?.statusName || 'Initiated';
     if (!customer || !communicationStartMode || !status) return;
 
     const now = new Date().toISOString();
@@ -430,10 +436,9 @@ const crmKanbanBoard3 = () => {
         ...editingCard,
         ...newCard,
         customer,
-        communicationStartMode,
+        communicationStartMode : newCard.communicationStartModeId ? newCard.communicationStartModeId : communicationStartMode.id ,
         updatedDate: now,
-        status,
-        statusId: status.id,
+        status : status ? status : statuses.find(s => s.id === newCardColumn)?.statusName || 'Initiated',
       };
 
       updatedColumns = columns.map(col => ({
@@ -446,12 +451,13 @@ const crmKanbanBoard3 = () => {
     } else {
       // Create new card
       const newDealCard: CrmDealDto = {
-        id: Math.floor(Math.random() * 1000) + 100,
-        ...newCard,
+         ...newCard,
+        id: Math.floor(Math.random() * 1000) + 100,       
+        referenceNumber: newCard.referenceNumber ?? `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        customerId: newCard.customerId ?? 0,
         customer,
-        communicationStartMode,
-        status,
-        statusId: status.id,
+        communicationStartMode : newCard.communicationStartModeId ? newCard.communicationStartModeId : communicationStartMode.id ,
+        status : status ? status : statuses.find(s => s.id === newCardColumn)?.statusName || 'Initiated',
         createdDate: now,
         updatedDate: null,
         value: newCard.value || '$0'
@@ -528,7 +534,15 @@ const crmKanbanBoard3 = () => {
     setNewActivity({
       description: '',
       activityTypeId: 1,
-      activityDate: new Date().toISOString().split('T')[0]
+      activityDate: new Date().toISOString().split('T')[0],
+      communicationDate: new Date().toISOString().split('T')[0],
+      communicationMode: getActivityTypeName(newActivity.activityTypeId || 1),
+      communicationDetails: '',
+      outcome: '',
+      personContacted: '',
+      recordingPersonnel: 'PAGAdmin',
+      crmStatus: null,
+      crmStatusId: 1, // Default to 'Initiated'
     });
   };
   
@@ -538,17 +552,23 @@ const crmKanbanBoard3 = () => {
     
     if (name === 'activityTypeId') {
       setNewActivity({ ...newActivity, [name]: parseInt(value) });
+    }else if(name === 'crmStatusId') {
+      setNewActivity({ ...newActivity, crmStatus: statuses.find(s => s.id === parseInt(value)) || null });
+
     } else {
       setNewActivity({ ...newActivity, [name]: value });
     }
   };
   
   // Save new activity
-  const handleSaveActivity = () => {
+  const handleSaveActivity = async () => {
     if (!selectedDeal) return;
     if (!newActivity.description) return;
     
     const now = new Date().toISOString();
+    let apiPayload: Partial<CrmActivityDto>;
+    let apiMethod = 'POST';
+    let apiUrl = `${API_BASE}/Crm/${selectedDeal.id}/communications`;
     
     // Create new activity
     const activity: CrmActivityDto = {
@@ -562,11 +582,50 @@ const crmKanbanBoard3 = () => {
       description: newActivity.description || '',
       activityDate: newActivity.activityDate || now,
       createdDate: now,
-      updatedDate: null
+      updatedDate: null,
+      crmStatus: newActivity.crmStatus || 'Initiated' ,
+      recordingPersonnel: 'PAGAdmin',
+      personContacted: newActivity.personContacted || '',
+      communicationMode: getActivityTypeName(newActivity.activityTypeId || 1),
+      communicationDetails: newActivity.description || '',
+      communicationDate: newActivity.communicationDate || now,
+      outcome: newActivity.crmStatus['statusName'] || 'Initiated' 
     };
+
+    const apiActivity = {
+      communicationDate: now,
+      communicationMode: getActivityTypeName(newActivity.activityTypeId || 1),
+      communicationDetails: newActivity.description || '',
+      personContacted: newActivity.personContacted || '',
+      recordingPersonnel: 'PAGAdmin',
+      outcome: newActivity.crmStatus['statusName'] || 'Initiated' 
+    };
+
+    apiPayload = apiActivity;
+
+    console.log('#crmKanbanBoard3 - handleSaveActivity: ', apiActivity);
     
     // Add activity to activities state
     setActivities([...activities, activity]);
+
+    // // API call
+    try {
+      const response = await fetch(apiUrl, {
+        method: apiMethod,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(apiPayload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to save deal: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('#crmKanbanBoard3 - handleSaveCard: ', result);
+    } catch (error) {
+      console.error("Error submitting card:", error);
+    }
     
     // Close form
     setShowActivityForm(false);
@@ -698,7 +757,7 @@ const crmKanbanBoard3 = () => {
                                 className="text-gray-400 hover:text-gray-600"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleEditCard(card);
+                                  handleEditCard(card, column.id);
                                 }}
                                 title="Edit Deal"
                               >
@@ -710,6 +769,7 @@ const crmKanbanBoard3 = () => {
                                 e.stopPropagation();
                                 handleShowActivityForm(card);
                               }}
+                              title="Add Activity"
                             >
                               <Plus className="h-4 w-4" />
                             </button>
@@ -718,7 +778,7 @@ const crmKanbanBoard3 = () => {
                             </button> */}
                           </div>
                         </div>
-                        <p className="text-xs text-gray-500 mb-2" onClick={() => handleEditCard(card)} >{card.referenceNumber}</p>
+                        <p className="text-xs text-gray-500 mb-2" onClick={() => handleEditCard(card, column.id)} >{card.referenceNumber}</p>
                         <div className="mb-2">
                           <p className="text-xs text-gray-500 mb-1">Services:</p>
                           <div className="flex flex-wrap gap-1">
@@ -732,8 +792,8 @@ const crmKanbanBoard3 = () => {
                             )}
                           </div>
                         </div>
-                        <p className="text-xs text-gray-600 mb-2" onClick={() => handleEditCard(card)}>by {card.recordingPersonnel}</p>
-                        <div className="flex justify-between items-center mt-2" onClick={() => handleEditCard(card)}>
+                        <p className="text-xs text-gray-600 mb-2" onClick={() => handleEditCard(card , column.id)}>by {card.recordingPersonnel}</p>
+                        <div className="flex justify-between items-center mt-2" onClick={() => handleEditCard(card , column.id)}>
                           <span className="text-sm font-medium text-green-600">{card.value}</span>
                           <span className="text-xs text-gray-500">{getDaysInStage(card)} days</span>
                         </div>
@@ -891,6 +951,17 @@ const crmKanbanBoard3 = () => {
                       onChange={handleActivityChange}
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Person Contacted</label>
+                    <input
+                      type="text"
+                      name="personContacted"
+                      className="w-full p-2 border rounded"
+                      value={newActivity.personContacted}
+                      onChange={handleActivityChange}
+                    />
+                  </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -904,6 +975,25 @@ const crmKanbanBoard3 = () => {
                     ></textarea>
                   </div>
                 </div>
+
+                 <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
+                    <select
+                      name="crmStatusId"
+                      className="w-full p-2 border rounded"
+                      value={newActivity.crmStatusId}
+                      onChange={handleActivityChange}
+                    >
+                      <option value={1}>Initiated</option>
+                      <option value={2}>RequestedForQuote</option>
+                      <option value={3}>Other</option>
+                      <option value={4}>ForwardedToCommercialDepartment</option>
+                      <option value={5}>Negotiation</option>
+                      <option value={6}>Completed</option>
+                      <option value={7}>Closed</option>
+                      <option value={8}>Lost</option>
+                    </select>
+                  </div>
                 
                 <div className="flex justify-end">
                   <button
