@@ -81,3 +81,12 @@ export interface KanbanColumn {
   color: string;
   cards: CrmDealDto[];
 }
+
+// Define interface for email template
+export interface EmailTemplateDto {
+  id: number;
+  templateName: string;
+  subject: string;
+  body: string;
+  isActive: boolean;
+}

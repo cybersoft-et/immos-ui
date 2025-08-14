@@ -4,72 +4,52 @@ import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 
+interface IContactPerson {
+  id: number;
+  name: string;
+  email: string;
+  telephoneNumber: string;
+  alternateTelephoneNumber: string;
+}
+
+interface IDocument {
+  documentId: number;
+}
+
 interface IFormInput {
-  id: 0,
-  name: string,
-  customerType: 'Individual',
-  payeeCustomer: {
-    id: 0,
-    name: string,
-    email: string,
-    telephoneNumber: string,
-    alternateTelephoneNumber: string
-  },
-  companyHead: {
-    id: 0,
-    name: string,
-    email: string,
-    telephoneNumber: string,
-    alternateTelephoneNumber: string
-  },
-  contactPersons: [
-    {
-      id: 0,
-      name: string,
-      email: string,
-      telephoneNumber: string,
-      alternateTelephoneNumber: string
-    }
-  ],
-  companyHeadId: 0,
-  companyOwnerId: 0,
-  companyOwner: {
-    id: 0,
-    name: string,
-    email: string,
-    telephoneNumber: string,
-    alternateTelephoneNumber: string
-  },
+  id: number;
+  name: string;
+  customerType: 'Individual' | 'Company';
+  payeeCustomer: IContactPerson;
+  companyHead: IContactPerson;
+  contactPersons: IContactPerson[];
+  companyHeadId: number;
+  companyOwnerId: number;
+  companyOwner: IContactPerson;
   address: {
-    id: 0,
-    addressType: string,
-    region: string,
-    city: string,
-    subCity: string,
-    woreda: string,
-    kebele: string,
-    houseNo: string,
-    landmark: string
-  },
-  industry: string,
-  specializations: [
-    string
-  ],
-  categoryId: 0,
-  subCategoryId: 0,
-  payeeCustomerId: 0,
-  addressId: 0,
-  email: string,
-  telephoneNumber: string,
-  alternateTelephoneNumber: string,
-  documents: [
-    {
-      documentId: 0
-    }
-  ],
-  clientCode: string,
-  consecutiveNo: string,
-  customerId: string, 
+    id: number;
+    addressType: string;
+    region: string;
+    city: string;
+    subCity: string;
+    woreda: string;
+    kebele: string;
+    houseNo: string;
+    landmark: string;
+  };
+  industry: string;
+  specializations: string[];
+  categoryId: number;
+  subCategoryId: number;
+  payeeCustomerId: number;
+  addressId: number;
+  email: string;
+  telephoneNumber: string;
+  alternateTelephoneNumber: string;
+  documents: IDocument[];
+  clientCode: string;
+  consecutiveNo: string;
+  customerId: string;
 }
 
 const CustomerForm = ({ editId = null, isViewOnly = false }) => {
@@ -133,17 +113,23 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
         telephoneNumber: '',
         alternateTelephoneNumber: '',
       },
-      contactPersons: [],
+      contactPersons: [{
+        id: 0,
+        name: '',
+        email: '',
+        telephoneNumber: '',
+        alternateTelephoneNumber: ''
+      }],
       address: {
         id: 0,
         addressType: 'Home',
-        region: 'Addis Ababa',
+        region: 'Ethiopia',
         city: 'Addis Ababa',
         subCity: 'Addis Ketema',
         woreda: '01',
         kebele: '02',
         houseNo: '1234',
-        landmark: 'Near Bole Airport',
+        landmark: 'NEW',
       },
       industry: '',
       specializations: [],
@@ -155,7 +141,6 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       clientCode: '',
       consecutiveNo: '',
       customerId: '', 
-
     },
   });
 
@@ -933,16 +918,16 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category ID
+                Category
               </label>
-
               <select
                 {...register('categoryId')}
                 onChange={handleCustomerTypeChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
                 defaultValue={fetchedCustomer?.categoryId || 'Individual'}
-              >               
+              >
+                <option value={0}>Select Category ...</option>                
                 {lookuData.customerCategories.map((option, index) => (
                   <option key={index} value={option.id}>
                       {option.value}
@@ -954,7 +939,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sub-Category ID
+                Sub-Category
               </label>
               <select
                 {...register('subCategoryId')}
@@ -962,7 +947,8 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
                 defaultValue={fetchedCustomer?.subCategoryId}
-              >               
+              > 
+              <option value={0}>Select Sub-Category ...</option>             
                 {lookuData.subCustomerCategories.map((option, index) => (
                   <option key={index} value={option.id}>
                       {option.value}
@@ -1090,7 +1076,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
         </div>
         
         {/* Company Information - Only visible when customerType is Company */}
-        {customerType === 'Company' && (
+        {customerType === 'Company' || 'Individual' && (
           <>
             {/* Company Head */}
             <div className="bg-white p-6 rounded-lg shadow">

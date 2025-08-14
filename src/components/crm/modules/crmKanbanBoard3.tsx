@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, ChevronDown, Plus, X, Calendar, Phone, Mail, MessageSquare, Minus, Edit } from 'lucide-react';
-import { CustomerDto , CrmDealDto, CrmActivityDto, CrmStatusDto, CommunicationStartModeDto, CrmActivityTypeDto, CrmStatusHistoryDto, KanbanColumn } from '../dtos/customer';
+import { Search, Filter, ChevronDown, Plus, X, Calendar, Phone, Mail, MessageSquare, Minus, Edit, Send, Clock, BookText } from 'lucide-react';
+import { CustomerDto , CrmDealDto, CrmActivityDto, CrmStatusDto, CommunicationStartModeDto, CrmActivityTypeDto, CrmStatusHistoryDto, KanbanColumn, EmailTemplateDto } from '../dtos/customer';
 
 // Define interfaces based on provided types
 
-const crmKanbanBoard3 = () => {
+const CrmKanbanBoard3 = () => {
   // API configuration
   const API_BASE: string = import.meta.env.VITE_API_BASE_URL;
   // State for fetched data
@@ -13,6 +13,8 @@ const crmKanbanBoard3 = () => {
   const [availableServices, setavailableServices] = useState<any[]>([]);
   const [communicationModes, setCommunicationModes] = useState<CommunicationStartModeDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplateDto[]>([]);
+
 
   // Sample status data (this might also come from API later)
   const statuses: CrmStatusDto[] = [
@@ -113,6 +115,38 @@ const crmKanbanBoard3 = () => {
     // }
     
   };
+
+  // Sample email templates (fallback if API fails)
+  const fallbackEmailTemplates: EmailTemplateDto[] = [
+    {
+      id: 1,
+      templateName: 'Welcome Email',
+      subject: 'Welcome to Our Services - {{customerName}}',
+      body: 'Dear {{customerName}},\n\nThank you for choosing our services. We are excited to work with you on your {{requestedServices}} needs.\n\nReference: {{referenceNumber}}\n\nBest regards,\n{{recordingPersonnel}}',
+      isActive: true
+    },
+    {
+      id: 2,
+      templateName: 'Follow-up Email',
+      subject: 'Follow-up on Your Request - {{referenceNumber}}',
+      body: 'Dear {{customerName}},\n\nI wanted to follow up on your recent inquiry regarding {{requestedServices}}.\n\nPlease let me know if you have any questions or if there\'s anything else I can help you with.\n\nBest regards,\n{{recordingPersonnel}}',
+      isActive: true
+    },
+    {
+      id: 3,
+      templateName: 'Proposal Submission',
+      subject: 'Proposal for {{requestedServices}} - {{referenceNumber}}',
+      body: 'Dear {{customerName}},\n\nPlease find attached our proposal for the {{requestedServices}} you requested.\n\nWe look forward to hearing from you soon.\n\nBest regards,\n{{recordingPersonnel}}',
+      isActive: true
+    },
+    {
+      id: 4,
+      templateName: 'Status Update',
+      subject: 'Status Update - {{referenceNumber}}',
+      body: 'Dear {{customerName}},\n\nI wanted to provide you with an update on your request for {{requestedServices}}.\n\nCurrent Status: In Progress\n\nWe will keep you informed of any developments.\n\nBest regards,\n{{recordingPersonnel}}',
+      isActive: true
+    }
+  ];
   
   // Generate initial columns based on statuses
   const generateInitialColumns = (): KanbanColumn[] => {
@@ -171,21 +205,46 @@ const crmKanbanBoard3 = () => {
     value: '',
   });
 
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [selectedDealForEmail, setSelectedDealForEmail] = useState<CrmDealDto | null>(null);
+  const [emailForm, setEmailForm] = useState({
+    templateId: 0,
+    to: '',
+    cc: '',
+    bcc: '',
+    subject: '',
+    body: '',
+    priority: 'normal'
+  });
+
+  const [showActivitySidebar, setShowActivitySidebar] = useState(false);
+  const [selectedDealForActivities, setSelectedDealForActivities] = useState<CrmDealDto | null>(null);
+
+
+
   // Initialize columns from sample data
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [customerRes, serviceTypeRes, communicationModeRes, crmDataResp] = await Promise.all([
+        const [customerRes, serviceTypeRes, communicationModeRes, crmDataResp, emailTemplatesRes] = await Promise.all([
           fetch(`${API_BASE}/Core/Customers`).then(res => res.json()),
           fetch(`${API_BASE}/Crm/ServiceTypes`).then(res => res.json()),
           fetch(`${API_BASE}/Crm/CommunicationModes`).then(res => res.json()),
           fetch(`${API_BASE}/Crm`).then(res => res.json()),
+          fetch(`${API_BASE}/Crm/EmailTemplates`).then(res => res.json()),
         ]);
 
         setCustomers(customerRes);        
         setavailableServices(serviceTypeRes);
         setCommunicationModes(communicationModeRes);
         setCrmData(crmDataResp);
+
+         // Handle email templates response
+        if (Array.isArray(emailTemplatesRes) && emailTemplatesRes.length > 0) {
+          setEmailTemplates(emailTemplatesRes.filter(template => template.isActive));
+        } else {
+          setEmailTemplates(fallbackEmailTemplates);
+        }
 
       } catch (error) {
         console.error("API fetch error:", error);
@@ -526,6 +585,124 @@ const crmKanbanBoard3 = () => {
     });
     setNewCardColumn(null);
   };
+
+  // Show email modal for a deal
+  const handleShowEmailModal = (deal: CrmDealDto) => {
+    setSelectedDealForEmail(deal);
+    setShowEmailModal(true);
+    // Pre-populate email form with customer email
+    setEmailForm({
+      templateId: 0,
+      to: deal.customer?.email || '',
+      cc: '',
+      bcc: '',
+      subject: '',
+      body: '',
+      priority: 'normal'
+    });
+  };
+
+  // Handle email form input change
+  const handleEmailFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEmailForm({ ...emailForm, [name]: value });
+  };
+
+  // Handle template selection and populate subject/body
+  const handleTemplateSelection = (templateId: number) => {
+    const template = emailTemplates.find(t => t.id === templateId);
+    if (!template || !selectedDealForEmail) return;
+
+    // Replace placeholders with actual data
+    const replacePlaceholders = (text: string): string => {
+      return text
+        .replace(/{{customerName}}/g, selectedDealForEmail.customer?.name || '')
+        .replace(/{{referenceNumber}}/g, selectedDealForEmail.referenceNumber)
+        .replace(/{{requestedServices}}/g, selectedDealForEmail.requestedServices.join(', '))
+        .replace(/{{recordingPersonnel}}/g, selectedDealForEmail.recordingPersonnel);
+    };
+
+    setEmailForm({
+      ...emailForm,
+      templateId: templateId,
+      subject: replacePlaceholders(template.subject),
+      body: replacePlaceholders(template.body)
+    });
+  };
+
+  // Send email
+  const handleSendEmail = async () => {
+    if (!selectedDealForEmail) return;
+    if (!emailForm.to || !emailForm.subject || !emailForm.body) {
+      alert('Please fill in all required fields (To, Subject, Body)');
+      return;
+    }
+
+    try {
+      // Here you would make an API call to send the email
+      const emailData = {
+        dealId: selectedDealForEmail.id,
+        to: emailForm.to,
+        cc: emailForm.cc,
+        bcc: emailForm.bcc,
+        subject: emailForm.subject,
+        body: emailForm.body,
+        priority: emailForm.priority,
+        templateId: emailForm.templateId || null
+      };
+
+      // Simulate API call
+      console.log('Sending email:', emailData);
+      
+      // In a real application, you would call:
+      // await fetch(`${API_BASE}/Crm/SendEmail`, {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(emailData)
+      // });
+
+      // Create activity record for email sent
+      const emailActivity: CrmActivityDto = {
+        id: Math.floor(Math.random() * 1000) + 300,
+        deal: selectedDealForEmail,
+        dealId: selectedDealForEmail.id || 0,
+        customer: selectedDealForEmail.customer || { id: 0, name: '' },
+        customerId: selectedDealForEmail.customerId,
+        activityType: { id: 3, activityName: 'Email' },
+        activityTypeId: 3,
+        description: `Email sent: ${emailForm.subject}`,
+        activityDate: new Date().toISOString(),
+        createdDate: new Date().toISOString(),
+        updatedDate: null
+      };
+
+      setActivities([...activities, emailActivity]);
+      
+      // Close modal and reset form
+      setShowEmailModal(false);
+      setSelectedDealForEmail(null);
+      
+      alert('Email sent successfully!');
+    } catch (error) {
+      console.error('Error sending email:', error);
+      alert('Failed to send email. Please try again.');
+    }
+  };
+
+  // Cancel email
+  const handleCancelEmail = () => {
+    setShowEmailModal(false);
+    setSelectedDealForEmail(null);
+    setEmailForm({
+      templateId: 0,
+      to: '',
+      cc: '',
+      bcc: '',
+      subject: '',
+      body: '',
+      priority: 'normal'
+    });
+  };
   
   // Show activity form for a deal
   const handleShowActivityForm = (deal: CrmDealDto) => {
@@ -544,6 +721,75 @@ const crmKanbanBoard3 = () => {
       crmStatus: null,
       crmStatusId: 1, // Default to 'Initiated'
     });
+  };
+
+  // Toggle activities sidebar
+  const handleToggleActivitySidebar = () => {
+    if (showActivitySidebar) {
+      handleCloseActivitiesSidebar();
+    } else {
+      setShowActivitySidebar(true);
+      // If no deal is selected, select the first available deal
+      if (!selectedDealForActivities && columns.length > 0) {
+        const firstDeal = columns.find(col => col.cards.length > 0)?.cards[0];
+        if (firstDeal) {
+          setSelectedDealForActivities(firstDeal);
+        }
+      }
+    }
+  };
+
+  // Show activities sidebar for a deal
+  const handleShowActivitiesSidebar = (deal: CrmDealDto) => {
+    setSelectedDealForActivities(deal);
+    setShowActivitySidebar(true);
+  };
+
+  // Close activities sidebar
+  const handleCloseActivitiesSidebar = () => {
+    setShowActivitySidebar(false);
+    setSelectedDealForActivities(null);
+  };
+
+  // Get activities for selected deal
+  const getActivitiesForDeal = (dealId: number): CrmActivityDto[] => {
+    return activities.filter(activity => activity.dealId === dealId);
+  };
+
+  // Format activity date for display
+  const formatActivityDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return 'Today';
+    if (diffDays === 2) return 'Yesterday';
+    if (diffDays <= 7) return `${diffDays - 1} days ago`;
+    
+    return date.toLocaleDateString();
+  };
+
+  // Get activity icon based on type
+  const getActivityIcon = (activityTypeId: number) => {
+    switch(activityTypeId) {
+      case 1: return <Phone className="h-4 w-4 text-blue-500" />;
+      case 2: return <Calendar className="h-4 w-4 text-green-500" />;
+      case 3: return <Mail className="h-4 w-4 text-purple-500" />;
+      case 4: return <MessageSquare className="h-4 w-4 text-yellow-500" />;
+      default: return <FileText className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  // Get activity color based on type
+  const getActivityColor = (activityTypeId: number): string => {
+    switch(activityTypeId) {
+      case 1: return 'bg-blue-100 border-blue-200';
+      case 2: return 'bg-green-100 border-green-200';
+      case 3: return 'bg-purple-100 border-purple-200';
+      case 4: return 'bg-yellow-100 border-yellow-200';
+      default: return 'bg-gray-100 border-gray-200';
+    }
   };
   
   // Handle activity input change
@@ -682,13 +928,14 @@ const crmKanbanBoard3 = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
-      {/* Loading State */}
-      {loading && (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Loading CRM data...</div>
-        </div>
-      )}
+    <div className="flex h-full bg-gray-50">
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${showActivitySidebar ? 'mr-80' : ''}`}>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-gray-500">Loading CRM data...</div>
+          </div>
+        )}
 
       {/* Main Content */}
       {!loading && (
@@ -711,6 +958,22 @@ const crmKanbanBoard3 = () => {
                 <Filter className="h-4 w-4 mr-2" />
                 <span>Filters</span>
               </button>
+              <button 
+                  className={`flex items-center px-3 py-2 border rounded-md transition-colors ${
+                    showActivitySidebar 
+                      ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                      : 'bg-white hover:bg-gray-50'
+                  }`}
+                  onClick={handleToggleActivitySidebar}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  <span>Activities</span>
+                  {activities.length > 0 && (
+                    <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                      {activities.length}
+                    </span>
+                  )}
+               </button>
             </div>
           </div>
 
@@ -754,6 +1017,16 @@ const crmKanbanBoard3 = () => {
                           <h4 className="font-medium text-gray-800">{card.customer?.name}</h4>
                           <div className="flex space-x-2">
                             <button 
+                              className="text-gray-400 hover:text-green-600 p-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleShowEmailModal(card);
+                              }}
+                              title="Send Email"
+                            >
+                              <Send className="h-4 w-4" />
+                            </button>
+                            <button 
                                 className="text-gray-400 hover:text-gray-600"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -772,6 +1045,16 @@ const crmKanbanBoard3 = () => {
                               title="Add Activity"
                             >
                               <Plus className="h-4 w-4" />
+                            </button>
+                            <button 
+                              className="text-gray-400 hover:text-gray-600"
+                               onClick={(e) => {
+                                e.stopPropagation();
+                                handleShowActivitiesSidebar(card);
+                              }}
+                              title="Show Activity"
+                            >
+                              <BookText className="h-4 w-4" />
                             </button>
                             {/* <button className="text-gray-400 hover:text-gray-600">
                               <MoreVertical className="h-4 w-4" />
@@ -800,7 +1083,7 @@ const crmKanbanBoard3 = () => {
                       </div>
                     ))}
 
-                    {/* New Card Form */}
+                    {/* New/ Edit Card Form */}
                     {showCardForm && newCardColumn === column.id && (
                       <div className="bg-white p-3 rounded-md shadow border-2 border-blue-500">
                         <div className="flex justify-between items-center mb-3">
@@ -907,7 +1190,7 @@ const crmKanbanBoard3 = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div>        
 
           {/* Activity Form Modal */}
           {showActivityForm && selectedDeal && (
@@ -1007,38 +1290,6 @@ const crmKanbanBoard3 = () => {
             </div>
           )}
 
-          {/* Activities List Panel */}
-          {activities.length > 0 && (
-            <div className="border-t bg-white p-4 max-h-64 overflow-y-auto">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-medium text-gray-800">Recent Activities</h3>
-                <button className="text-sm text-blue-500 hover:text-blue-700">View All</button>
-              </div>
-              <div className="space-y-3">
-                {activities.slice().reverse().slice(0, 5).map(activity => (
-                  <div key={activity.id} className="flex border-b pb-2">
-                    <div className="mr-3">
-                      {activity.activityTypeId === 1 && <Phone className="h-5 w-5 text-blue-500" />}
-                      {activity.activityTypeId === 2 && <Calendar className="h-5 w-5 text-green-500" />}
-                      {activity.activityTypeId === 3 && <Mail className="h-5 w-5 text-purple-500" />}
-                      {activity.activityTypeId === 4 && <MessageSquare className="h-5 w-5 text-yellow-500" />}
-                    </div>
-                    <div>
-                      <div className="flex items-center mb-1">
-                        <p className="text-sm font-medium mr-2">{activity.customer.name}</p>
-                        <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">{activity.activityType.activityName}</span>
-                      </div>
-                      <p className="text-sm text-gray-600">{activity.description}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(activity.activityDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Statistics Footer */}
           <div className="p-4 border-t bg-white">
             <div className="flex justify-between">
@@ -1060,10 +1311,356 @@ const crmKanbanBoard3 = () => {
               </div>
             </div>
           </div>
+
+          {/* Activities Sidebar */}
+          {showActivitySidebar && (
+            <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-lg z-40 flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b">
+                <div className="flex items-center">
+                  <Clock className="h-5 w-5 text-blue-500 mr-2" />
+                  <h3 className="font-medium text-gray-800">Activities</h3>
+                </div>
+                <button 
+                  onClick={() => setShowActivitySidebar(false)}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Deal Selection */}
+              <div className="p-4 border-b bg-gray-50">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select Deal:</label>
+                <select
+                  className="w-full p-2 border rounded-md text-sm"
+                  value={selectedDealForActivities?.id || ''}
+                  onChange={(e) => {
+                    const dealId = parseInt(e.target.value);
+                    const deal = columns.flatMap(col => col.cards).find(card => card.id === dealId);
+                    if (deal) {
+                      setSelectedDealForActivities(deal);
+                    }
+                  }}
+                >
+                  <option value="">Select a deal...</option>
+                  {columns.flatMap(col => col.cards).map(deal => (
+                    <option key={deal.id} value={deal.id}>
+                      {deal.customer?.name} - {deal.referenceNumber}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Deal Info */}
+              {selectedDealForActivities && (
+                <div className="p-4 border-b bg-gray-50">
+                  <h4 className="font-medium text-gray-800">{selectedDealForActivities.customer?.name}</h4>
+                  <p className="text-sm text-gray-600">{selectedDealForActivities.referenceNumber}</p>
+                  <div className="flex items-center mt-2 space-x-2">
+                    <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      {selectedDealForActivities.status?.statusName}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {getActivitiesForDeal(selectedDealForActivities.id || 0).length} activities
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Activities List */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {selectedDealForActivities ? (
+                  <>
+                    {getActivitiesForDeal(selectedDealForActivities.id || 0).length > 0 ? (
+                      <div className="space-y-3">
+                        {getActivitiesForDeal(selectedDealForActivities.id || 0)
+                          .sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime())
+                          .map(activity => (
+                          <div 
+                            key={activity.id} 
+                            className={`p-3 rounded-lg border ${getActivityColor(activity.activityTypeId)} hover:shadow-sm transition-shadow`}
+                          >
+                            <div className="flex items-start space-x-3">
+                              <div className="flex-shrink-0 mt-1">
+                                {getActivityIcon(activity.activityTypeId)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+                                    {activity.activityType.activityName}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {formatActivityDate(activity.createdDate)}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-800 mb-1">{activity.description}</p>
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <User className="h-3 w-3 mr-1" />
+                                  <span>System Activity</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <MessageSquare className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 text-sm">No activities yet</p>
+                        <p className="text-gray-400 text-xs mt-1">
+                          Activities will appear here as they happen
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Clock className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 text-sm">Select a deal</p>
+                    <p className="text-gray-400 text-xs mt-1">
+                      Choose a deal to view its activities
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Actions */}
+              {selectedDealForActivities && (
+                <div className="p-4 border-t bg-gray-50">
+                  <div className="flex space-x-2">
+                    <button 
+                      className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+                      onClick={() => handleShowActivityForm(selectedDealForActivities)}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Activity
+                    </button>
+                    <button 
+                      className="flex-1 flex items-center justify-center px-3 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
+                      onClick={() => handleShowEmailModal(selectedDealForActivities)}
+                    >
+                      <Send className="h-4 w-4 mr-1" />
+                      Send Email
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Activity Form Modal */}
+          {showActivityForm && selectedDeal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-96 max-w-md">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium">Add Activity</h3>
+                  <button onClick={handleCancelActivity} className="text-gray-500 hover:text-gray-700">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                <div className="mb-2">
+                  <p className="text-sm font-medium text-gray-700">{selectedDeal.customer?.name}</p>
+                  <p className="text-xs text-gray-500">{selectedDeal.referenceNumber}</p>
+                </div>
+                
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
+                    <select
+                      name="activityTypeId"
+                      className="w-full p-2 border rounded"
+                      value={newActivity.activityTypeId}
+                      onChange={handleActivityChange}
+                    >
+                      <option value={1}>Call</option>
+                      <option value={2}>Meeting</option>
+                      <option value={3}>Email</option>
+                      <option value={4}>Note</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <input
+                      type="date"
+                      name="activityDate"
+                      className="w-full p-2 border rounded"
+                      value={newActivity.activityDate}
+                      onChange={handleActivityChange}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      name="description"
+                      rows={3}
+                      className="w-full p-2 border rounded"
+                      placeholder="Enter activity details..."
+                      value={newActivity.description}
+                      onChange={handleActivityChange}
+                    ></textarea>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end">
+                  <button
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    onClick={handleSaveActivity}
+                  >
+                    Save Activity
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Email Modal */}
+          {showEmailModal && selectedDealForEmail && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium">Send Email</h3>
+                  <button onClick={handleCancelEmail} className="text-gray-500 hover:text-gray-700">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                <div className="mb-4 p-3 bg-gray-50 rounded">
+                  <p className="text-sm font-medium text-gray-700">Deal: {selectedDealForEmail.customer?.name}</p>
+                  <p className="text-xs text-gray-500">{selectedDealForEmail.referenceNumber}</p>
+                </div>
+                
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Template</label>
+                    <select
+                      name="templateId"
+                      className="w-full p-2 border rounded"
+                      value={emailForm.templateId}
+                      onChange={(e) => {
+                        handleEmailFormChange(e);
+                        if (e.target.value !== '0') {
+                          handleTemplateSelection(parseInt(e.target.value));
+                        }
+                      }}
+                    >
+                      <option value={0}>Select a template...</option>
+                      {emailTemplates.map(template => (
+                        <option key={template.id} value={template.id}>{template.templateName}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">To *</label>
+                    <input
+                      type="email"
+                      name="to"
+                      className="w-full p-2 border rounded"
+                      placeholder="recipient@example.com"
+                      value={emailForm.to}
+                      onChange={handleEmailFormChange}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">CC</label>
+                      <input
+                        type="email"
+                        name="cc"
+                        className="w-full p-2 border rounded"
+                        placeholder="cc@example.com"
+                        value={emailForm.cc}
+                        onChange={handleEmailFormChange}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">BCC</label>
+                      <input
+                        type="email"
+                        name="bcc"
+                        className="w-full p-2 border rounded"
+                        placeholder="bcc@example.com"
+                        value={emailForm.bcc}
+                        onChange={handleEmailFormChange}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <select
+                      name="priority"
+                      className="w-full p-2 border rounded"
+                      value={emailForm.priority}
+                      onChange={handleEmailFormChange}
+                    >
+                      <option value="low">Low</option>
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
+                    <input
+                      type="text"
+                      name="subject"
+                      className="w-full p-2 border rounded"
+                      placeholder="Enter email subject"
+                      value={emailForm.subject}
+                      onChange={handleEmailFormChange}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+                    <textarea
+                      name="body"
+                      rows={8}
+                      className="w-full p-2 border rounded"
+                      placeholder="Enter your message here..."
+                      value={emailForm.body}
+                      onChange={handleEmailFormChange}
+                      required
+                    ></textarea>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-2">
+                  <button
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                    onClick={handleCancelEmail}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center"
+                    onClick={handleSendEmail}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Send Email
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+
         </>
       )}
+      </div>
     </div>
   );
 };
 
-export default crmKanbanBoard3;
+export default CrmKanbanBoard3;

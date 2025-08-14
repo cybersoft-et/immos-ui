@@ -1,0 +1,65 @@
+{
+    "id": 0,
+    "name": "Unbox Therapy LLC",
+    "customerType": "Individual",
+    "email": "UnboxTherapyLLC@gmail.com",
+    "telephoneNumber": "+251910826623",
+    "alternateTelephoneNumber": "+251910826623",
+    "payeeCustomer": {
+        "id": 0,
+        "name": "Abenezer Abebe Mekonnen",
+        "email": "abenezer.abeti@gmail.com",
+        "telephoneNumber": "0910826623",
+        "alternateTelephoneNumber": ""
+    },
+    "companyHead": {
+        "id": 0,
+        "name": "UNBOX COMPANY",
+        "email": "unbox@gmail.com",
+        "telephoneNumber": "0910826623",
+        "alternateTelephoneNumber": "0910826623"
+    },
+    "companyOwnerId": 0,
+    "companyOwner": {
+        "id": 0,
+        "name": "UNBOX CEO",
+        "email": "UNBOXCEO@gmail.com",
+        "telephoneNumber": "0910826623",
+        "alternateTelephoneNumber": "0910826623"
+    },
+    "addressId": 0,
+    "documents": [
+        {
+            "documentId": 23
+        }
+    ],
+    "customerId": "PGL/UNBOX/1000004/140825",
+    "clientCode": "UNBOX",
+    "consecutiveNo": 1000004,
+    "industry": "Streaming Company",
+    "categoryId": "0",
+    "subCategoryId": "0",
+    "address": {
+        "addressType": "Home",
+        "region": "USA",
+        "city": "Texsas",
+        "subCity": "Dallas",
+        "woreda": "000",
+        "kebele": "0002",
+        "houseNo": "9090",
+        "landmark": "NEW"
+    },
+    "contactPersons": [
+        {
+            "name": "Unbox Contact",
+            "email": "UnboxContact@gmail.com",
+            "telephoneNumber": "0910826623",
+            "alternateTelephoneNumber": "0910826623"
+        }
+    ],
+    "createDate": "PGL-25814",
+    "specializations": [
+        "Streaming Company",
+        "Content Generating Company"
+    ]
+}

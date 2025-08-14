@@ -7,7 +7,7 @@ import Dashboard from "./components/crm/layout/dashboard";
 import CustomerForm from "./components/crm/forms/customerForm";
 import CustomerList from "./components/crm/tables/customerList";
 import CustomerFormUI from "./components/crm/forms/customerFormUI";
-import CRMKanbanBoard3 from "./components/crm/modules/crmKanbanBoard3";
+import CRMKanbanBoard3 from "./components/crm/modules/CrmKanbanBoard3";
 import CRMKanbanBoard2 from "./components/crm/modules/crmKanbanBoard2";
 import SalesPipeline from "./components/crm/modules/salesPipeLine";
 
