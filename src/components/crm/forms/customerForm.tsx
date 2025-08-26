@@ -3,6 +3,8 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
+import { useNavigate } from 'react-router-dom';
+// import { API_BASE } from '../../../utils/api';
 
 interface IContactPerson {
   id: number;
@@ -72,7 +74,8 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
   const [documentsError, setDocumentsError] = useState('');
   const today = `PGL-${new Date().getFullYear().toLocaleString().substr(-2)}${new Date().getMonth() + 1}${new Date().getDate()}`;
 
-
+  const navigate = useNavigate();
+  
   const [lookuData, setlookuData] = useState({
     customerCategories: [],
     subCustomerCategories: [],
@@ -524,23 +527,22 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     const value = e.target.value;
     console.log('#CustomerForm - BLUR: ', value);
     try {
-        const response : any = await fetch(`${API_BASE}/core/Customers/CustomerId?customerName=${value}`);
+      const response : any = await fetch(`${API_BASE}/core/Customers/CustomerId?customerName=${value}`);
 
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(`Failed to fetch customer data: ${response.status}`);
-        }
-        console.log('#CustomerForm - BLUR: ', data);
+      const data = await response.json();
+      if (!response.ok) {
+          throw new Error(`Failed to fetch customer data: ${response.status}`);
+      }
+      console.log('#CustomerForm - BLUR: ', data);
 
-        setValue("clientCode", data.clientCode );
-        setValue("customerId", data.customerId );
-        setValue("consecutiveNo", data.consecutiveNumber );
+      setValue("clientCode", data.clientCode );
+      setValue("customerId", data.customerId );
+      setValue("consecutiveNo", data.consecutiveNumber );
 
     } catch (error) {
         console.error("Error fetching data:", error);
     }
   };
-  
   
   
   const { fields: documentFields, append: appendDocument, remove: removeDocument, replace: replaceDocuments } = useFieldArray({
@@ -590,10 +592,12 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
 
       // After successful upload, refresh the documents list
       if(editId !== null && editId !== undefined && editId !== 0) {
+        navigate('customerform/edit/:id'.replace(':id', editId));
         fetchDocuments(editId); // replaced to fetch docs by ID
         console.log('#CustomerForm - onSubmit - Fetching documents for Customer: ', editId);
 
       }else{
+        navigate('customerform/edit/:id'.replace(':id', result?.id));
         fetchDocuments(0, result?.id); // replace documents in the form
         console.log('#CustomerForm - onSubmit - Fetching documents for New User: ', result?.id);
       }

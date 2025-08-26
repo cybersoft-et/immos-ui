@@ -1,286 +1,223 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, ChevronDown, Plus, X, Calendar, Phone, Mail, MessageSquare } from 'lucide-react';
+import { Search, Filter, ChevronDown, Plus, X, Calendar, Phone, Mail, MessageSquare, Edit, Send, Clock, BookText, User, FileText } from 'lucide-react';
+import { CustomerDto , CrmDealDto, CrmActivityDto, CrmStatusDto, CommunicationStartModeDto, CrmStatusHistoryDto, KanbanColumn, EmailTemplateDto } from '../dtos/customer';
+
 // Define interfaces based on provided types
-import { CustomerDto , CrmDealDto, CrmActivityDto, CrmStatusDto, ServiceTypeDto, CrmActivityTypeDto, CrmStatusHistoryDto, KanbanColumn } from '../dtos/crmDtos';
 
-interface ServiceTypeDto {
-  id: number;
-  name: string;
-}
-
-interface CrmStatusDto {
-  id: number;
-  statusName: string;
-}
-
-interface CrmDealDto {
-  id: number;
-  cRMRefNo: string;
-  customer: CustomerDto;
-  customerId: number;
-  serviceType: ServiceTypeDto;
-  serviceTypeId: number;
-  assignedEmployeeId: number;
-  status: CrmStatusDto;
-  statusId: number;
-  createdDate: string;
-  updatedDate: string | null;
-  value?: string; // Added for display purposes
-}
-
-interface CrmActivityTypeDto {
-  id: number;
-  activityName: string;
-}
-
-interface CrmActivityDto {
-  id: number;
-  deal: CrmDealDto;
-  dealId: number;
-  customer: CustomerDto;
-  customerId: number;
-  activityType: CrmActivityTypeDto;
-  activityTypeId: number;
-  description: string;
-  activityDate: string;
-  createdDate: string;
-  updatedDate: string | null;
-}
-
-interface CrmStatusHistoryDto {
-  id: number;
-  deal: CrmDealDto;
-  dealId: number;
-  previousStatus: CrmStatusDto;
-  previousStatusId: number;
-  newStatus: CrmStatusDto;
-  newStatusId: number;
-  notes: string;
-  createdDate: string;
-}
-
-interface KanbanColumn {
-  id: number;
-  title: string;
-  count: number;
-  color: string;
-  cards: CrmDealDto[];
-}
-
-const CRMKanbanBoard = () => {
+const CrmKanbanBoard = () => {
+  // API configuration
+  // Todo: move to config file
   const API_BASE: string = import.meta.env.VITE_API_BASE_URL;
-  const API_FILE_BASE: string = import.meta.env.VITE_API_FILE_BASE_URL;
 
-  // Sample status data
+  // State for fetched data
+  const [crmData, setCrmData] = useState<CrmDealDto[]>([]);
+  const [customers, setCustomers] = useState<CustomerDto[]>([]);
+  const [availableServices, setavailableServices] = useState<any[]>([]);
+  const [communicationModes, setCommunicationModes] = useState<CommunicationStartModeDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplateDto[]>([]);
+
+  // Sample status data (this might also come from API later)
   const statuses: CrmStatusDto[] = [
     { id: 1, statusName: 'Initiated' },
     { id: 2, statusName: 'RequestedForQuote' },
     { id: 3, statusName: 'InProgress' },
-    { id: 4, statusName: 'ForwardedToCommercialDepartment ' },
+    { id: 4, statusName: 'ForwardedToCommercialDepartment' },
     { id: 5, statusName: 'Negotiation' },
     { id: 6, statusName: 'Completed' },
     { id: 7, statusName: 'Closed' },
     { id: 8, statusName: 'Lost' },
   ];
-  
-  // Sample customer data
-  const customers: CustomerDto[] = [
-    { id: 1, name: 'Acme Corporation', email: 'contact@acme.com', phone: '123-456-7890' },
-    { id: 2, name: 'TechSolutions Inc', email: 'info@techsolutions.com', phone: '234-567-8901' },
-    { id: 3, name: 'Global Industries', email: 'sales@globalindustries.com', phone: '345-678-9012' },
-    { id: 4, name: 'Sunrise Enterprises', email: 'hello@sunrise.com', phone: '456-789-0123' },
-    { id: 5, name: 'Quantum Systems', email: 'support@quantum.com', phone: '567-890-1234' },
-    { id: 6, name: 'Momentum Partners', email: 'partners@momentum.com', phone: '678-901-2345' },
-    { id: 7, name: 'Apex Solutions', email: 'info@apex.com', phone: '789-012-3456' },
-    { id: 8, name: 'Horizon Group', email: 'sales@horizon.com', phone: '890-123-4567' },
-    { id: 9, name: 'Pioneer Technologies', email: 'hello@pioneer.com', phone: '901-234-5678' },
-    { id: 10, name: 'Summit Enterprises', email: 'info@summit.com', phone: '012-345-6789' },
-    { id: 11, name: 'Atlantic Partners', email: 'deals@atlantic.com', phone: '123-456-7890' },
-  ];
-  
-  // Sample service types
-  // const serviceTypes: ServiceTypeDto[] = [
-  //   { id: 1, name: 'Consulting' },
-  //   { id: 2, name: 'Software Development' },
-  //   { id: 3, name: 'Hardware Supply' },
-  //   { id: 4, name: 'Maintenance' },
-  //   { id: 5, name: 'Training' },
-  // ];
-  
-  // Sample deals data
-  // const sampleDeals: CrmDealDto[] = [
-  //   {
-  //     id: 1,
-  //     cRMRefNo: 'CRM-2025-001',
-  //     customer: customers[0],
-  //     customerId: 1,
-  //     serviceType: serviceTypes[0],
-  //     serviceTypeId: 1,
-  //     assignedEmployeeId: 101,
-  //     status: statuses[0],
-  //     statusId: 1,
-  //     createdDate: '2025-03-01T10:00:00Z',
-  //     updatedDate: null,
-  //     value: '$12,500'
-  //   },
-  //   {
-  //     id: 2,
-  //     cRMRefNo: 'CRM-2025-002',
-  //     customer: customers[1],
-  //     customerId: 2,
-  //     serviceType: serviceTypes[1],
-  //     serviceTypeId: 2,
-  //     assignedEmployeeId: 102,
-  //     status: statuses[0],
-  //     statusId: 1,
-  //     createdDate: '2025-03-02T11:00:00Z',
-  //     updatedDate: null,
-  //     value: '$8,750'
-  //   },
-  //   {
-  //     id: 3,
-  //     cRMRefNo: 'CRM-2025-003',
-  //     customer: customers[2],
-  //     customerId: 3,
-  //     serviceType: serviceTypes[2],
-  //     serviceTypeId: 3,
-  //     assignedEmployeeId: 103,
-  //     status: statuses[0],
-  //     statusId: 1,
-  //     createdDate: '2025-03-03T09:00:00Z',
-  //     updatedDate: null,
-  //     value: '$15,200'
-  //   },
-  //   {
-  //     id: 4,
-  //     cRMRefNo: 'CRM-2025-004',
-  //     customer: customers[3],
-  //     customerId: 4,
-  //     serviceType: serviceTypes[0],
-  //     serviceTypeId: 1,
-  //     assignedEmployeeId: 104,
-  //     status: statuses[1],
-  //     statusId: 2,
-  //     createdDate: '2025-03-04T14:00:00Z',
-  //     updatedDate: '2025-03-10T09:00:00Z',
-  //     value: '$9,300'
-  //   },
-  //   {
-  //     id: 5,
-  //     cRMRefNo: 'CRM-2025-005',
-  //     customer: customers[4],
-  //     customerId: 5,
-  //     serviceType: serviceTypes[3],
-  //     serviceTypeId: 4,
-  //     assignedEmployeeId: 105,
-  //     status: statuses[1],
-  //     statusId: 2,
-  //     createdDate: '2025-03-05T16:00:00Z',
-  //     updatedDate: '2025-03-12T11:00:00Z',
-  //     value: '$11,000'
-  //   },
-  //   {
-  //     id: 6,
-  //     cRMRefNo: 'CRM-2025-006',
-  //     customer: customers[5],
-  //     customerId: 6,
-  //     serviceType: serviceTypes[1],
-  //     serviceTypeId: 2,
-  //     assignedEmployeeId: 106,
-  //     status: statuses[2],
-  //     statusId: 3,
-  //     createdDate: '2025-02-15T10:00:00Z',
-  //     updatedDate: '2025-03-15T14:00:00Z',
-  //     value: '$23,000'
-  //   },
-  //   {
-  //     id: 7,
-  //     cRMRefNo: 'CRM-2025-007',
-  //     customer: customers[6],
-  //     customerId: 7,
-  //     serviceType: serviceTypes[4],
-  //     serviceTypeId: 5,
-  //     assignedEmployeeId: 107,
-  //     status: statuses[2],
-  //     statusId: 3,
-  //     createdDate: '2025-02-20T09:00:00Z',
-  //     updatedDate: '2025-03-18T16:00:00Z',
-  //     value: '$17,500'
-  //   },
-  //   {
-  //     id: 8,
-  //     cRMRefNo: 'CRM-2025-008',
-  //     customer: customers[7],
-  //     customerId: 8,
-  //     serviceType: serviceTypes[0],
-  //     serviceTypeId: 1,
-  //     assignedEmployeeId: 108,
-  //     status: statuses[3],
-  //     statusId: 4,
-  //     createdDate: '2025-02-25T11:00:00Z',
-  //     updatedDate: '2025-03-20T10:00:00Z',
-  //     value: '$42,000'
-  //   },
-  //   {
-  //     id: 9,
-  //     cRMRefNo: 'CRM-2025-009',
-  //     customer: customers[8],
-  //     customerId: 9,
-  //     serviceType: serviceTypes[2],
-  //     serviceTypeId: 3,
-  //     assignedEmployeeId: 109,
-  //     status: statuses[3],
-  //     statusId: 4,
-  //     createdDate: '2025-03-01T15:00:00Z',
-  //     updatedDate: '2025-03-22T09:00:00Z',
-  //     value: '$31,400'
-  //   },
-  //   {
-  //     id: 10,
-  //     cRMRefNo: 'CRM-2025-010',
-  //     customer: customers[9],
-  //     customerId: 10,
-  //     serviceType: serviceTypes[1],
-  //     serviceTypeId: 2,
-  //     assignedEmployeeId: 110,
-  //     status: statuses[4],
-  //     statusId: 5,
-  //     createdDate: '2025-02-10T13:00:00Z',
-  //     updatedDate: '2025-04-01T14:00:00Z',
-  //     value: '$29,800'
-  //   },
-  //   {
-  //     id: 11,
-  //     cRMRefNo: 'CRM-2025-011',
-  //     customer: customers[10],
-  //     customerId: 11,
-  //     serviceType: serviceTypes[3],
-  //     serviceTypeId: 0,
-  //     assignedEmployeeId: 111,
-  //     status: statuses[4],
-  //     statusId: 5,
-  //     createdDate: '2025-02-15T10:00:00Z',
-  //     updatedDate: '2025-04-05T11:00:00Z',
-  //     value: '$19,500'
-  //   },
-  // ];
 
-  const sampleDeals: CrmDealDto[] = [];
+  // State for UI
+  const [columns, setColumns] = useState<KanbanColumn[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [draggingCard, setDraggingCard] = useState<{columnId: number, cardId: number} | null>(null);
+  const [selectedDeal, setSelectedDeal] = useState<CrmDealDto | null>(null);
+
+  // Card form state
+  const [showCardForm, setShowCardForm] = useState(false);
+  const [newCardColumn, setNewCardColumn] = useState<number | null>(null);
+  const [editingCard, setEditingCard] = useState<CrmDealDto | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [newCard, setNewCard] = useState<Partial<CrmDealDto>>({
+    referenceNumber: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+    customerId: 0,
+    communicationStartModeId: 0,
+    communicationStartDate: new Date().toISOString(),
+    requestedServices: [],
+    recordingPersonnel: '',
+    value: '',
+  });
+
+  // Email state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [selectedDealForEmail, setSelectedDealForEmail] = useState<CrmDealDto | null>(null);
+  const [emailForm, setEmailForm] = useState({
+    templateId: 0,
+    to: '',
+    cc: '',
+    bcc: '',
+    subject: '',
+    body: '',
+    priority: 'normal'
+  });
+  
+  // Activity state
+  const [activities, setActivities] = useState<CrmActivityDto[]>([]);
+  const [showActivityForm, setShowActivityForm] = useState(false);
+  const [newActivity, setNewActivity] = useState<Partial<CrmActivityDto>>({
+    description: '',
+    activityTypeId: 1,
+    activityDate: new Date().toISOString().split('T')[0]
+  });
+
+  // Activities sidebar state
+  const [showActivitySidebar, setShowActivitySidebar] = useState(false);
+  const [selectedDealForActivities, setSelectedDealForActivities] = useState<CrmDealDto | null>(null);
+  const [dealActivities, setDealActivities] = useState<{ [dealId: number]: CrmActivityDto[] }>({});
+  const [loadingActivities, setLoadingActivities] = useState(false);
+
+  
+  // Generate sample deals data (this will be replaced with API call later)
+  const generateSampleDeals = (): CrmDealDto[] => {
+    // if (customers.length !== 0 || communicationModes.length !== 0){
+    //   return [
+    //   {
+    //     id: 1,
+    //     referenceNumber: 'CRM-2025-001',
+    //     customerId: customers[0]?.id || 1,
+    //     communicationStartModeId: communicationModes[0]?.id || 1,
+    //     communicationStartDate: '2025-03-01T10:00:00Z',
+    //     requestedServices: ['Consulting', 'Software Development'],
+    //     recordingPersonnel: 'John Smith',
+    //     customer: customers[0],
+    //     communicationStartMode: communicationModes[0],
+    //     status: statuses[0],
+    //     statusId: 2,
+    //     value: '$12,500',
+    //     createdDate: '2025-03-01T10:00:00Z',
+    //     updatedDate: null
+    //   },
+    //   {
+    //     id: 2,
+    //     referenceNumber: 'CRM-2025-002',
+    //     customerId: customers[1]?.id || 2,
+    //     communicationStartModeId: communicationModes[1]?.id || 2,
+    //     communicationStartDate: '2025-03-02T11:00:00Z',
+    //     requestedServices: ['Software Development'],
+    //     recordingPersonnel: 'Jane Doe',
+    //     customer: customers[1],
+    //     communicationStartMode: communicationModes[1],
+    //     status: statuses[0],
+    //     statusId: 3,
+    //     value: '$8,750',
+    //     createdDate: '2025-03-02T11:00:00Z',
+    //     updatedDate: null
+    //   },
+    //   {
+    //     id: 3,
+    //     referenceNumber: 'CRM-2025-003',
+    //     customerId: customers[2]?.id || 3,
+    //     communicationStartModeId: communicationModes[0]?.id || 1,
+    //     communicationStartDate: '2025-03-03T09:00:00Z',
+    //     requestedServices: ['Hardware Supply', 'System Integration'],
+    //     recordingPersonnel: 'Mike Johnson',
+    //     customer: customers[2],
+    //     communicationStartMode: communicationModes[0],
+    //     status: statuses[1],
+    //     statusId: 4,
+    //     value: '$15,200',
+    //     createdDate: '2025-03-03T09:00:00Z',
+    //     updatedDate: null
+    //   }
+    //   ];
+    // }else{
+      // Fallback to sample data if customers or communication modes are not loaded
+      return crmData.map(deal => ({
+        // Generate unique ID if not provided
+        id : deal.id || Math.floor(Math.random() * 1000) + 100,
+        referenceNumber: deal.referenceNumber || `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        customerId: deal.customerId || 0,
+        communicationStartModeId: typeof deal.communicationStartModeId === 'number'
+          ? deal.communicationStartModeId
+          : (typeof deal.communicationStartMode === 'number'
+              ? deal.communicationStartMode
+              : (deal.communicationStartMode && 'id' in deal.communicationStartMode
+                  ? deal.communicationStartMode.id
+                  : 0)),
+        communicationStartDate: deal.communicationStartDate || new Date().toISOString(),
+        requestedServices: deal.requestedServices || [],
+        recordingPersonnel: deal.createdBy || 'Unknown',
+        customer: deal.customer ? deal.customer : customers.find(c => c.id === deal.customerId) || { id: 0, name: '' },
+        communicationStartMode: communicationModes.find(m => m.id === (typeof deal.communicationStartModeId === 'number'
+          ? deal.communicationStartModeId
+          : (typeof deal.communicationStartMode === 'number'
+              ? deal.communicationStartMode
+              : (deal.communicationStartMode && 'id' in deal.communicationStartMode
+                  ? deal.communicationStartMode.id
+                  : 0)))) || { id: 0, name: '' },
+        status: deal.status ? deal.status : statuses.find(s => s.id === deal.statusId)?.statusName || "Initiated" ,
+        statusId: deal.statusId ? statuses.find(s => s.id === deal.statusId)?.statusName || statuses.find(s => s.statusName === deal.status)?.id : 1,
+        value: '$12,500',
+        createdDate: deal.createdDate || new Date().toISOString(),
+        updatedDate: null,
+      }));
+    // }
+    
+  };
+
+  // Sample email templates (fallback if API fails)
+  const fallbackEmailTemplates: EmailTemplateDto[] = [
+    {
+      id: 1,
+      templateName: 'Welcome Email',
+      subject: 'Welcome to Our Services - {{customerName}}',
+      body: 'Dear {{customerName}},\n\nThank you for choosing our services. We are excited to work with you on your {{requestedServices}} needs.\n\nReference: {{referenceNumber}}\n\nBest regards,\n{{recordingPersonnel}}',
+      isActive: true
+    },
+    {
+      id: 2,
+      templateName: 'Follow-up Email',
+      subject: 'Follow-up on Your Request - {{referenceNumber}}',
+      body: 'Dear {{customerName}},\n\nI wanted to follow up on your recent inquiry regarding {{requestedServices}}.\n\nPlease let me know if you have any questions or if there\'s anything else I can help you with.\n\nBest regards,\n{{recordingPersonnel}}',
+      isActive: true
+    },
+    {
+      id: 3,
+      templateName: 'Proposal Submission',
+      subject: 'Proposal for {{requestedServices}} - {{referenceNumber}}',
+      body: 'Dear {{customerName}},\n\nPlease find attached our proposal for the {{requestedServices}} you requested.\n\nWe look forward to hearing from you soon.\n\nBest regards,\n{{recordingPersonnel}}',
+      isActive: true
+    },
+    {
+      id: 4,
+      templateName: 'Status Update',
+      subject: 'Status Update - {{referenceNumber}}',
+      body: 'Dear {{customerName}},\n\nI wanted to provide you with an update on your request for {{requestedServices}}.\n\nCurrent Status: In Progress\n\nWe will keep you informed of any developments.\n\nBest regards,\n{{recordingPersonnel}}',
+      isActive: true
+    }
+  ];
   
   // Generate initial columns based on statuses
   const generateInitialColumns = (): KanbanColumn[] => {
+    const sampleDeals = generateSampleDeals();
+    
     return statuses.map(status => {
       const statusDeals = sampleDeals.filter(deal => deal.statusId === status.id);
       let color = 'bg-gray-500';
       
       // Assign colors based on status
       switch(status.id) {
-        case 1: color = 'bg-blue-500'; break;    // Lead
-        case 2: color = 'bg-purple-500'; break;  // Contacted
-        case 3: color = 'bg-yellow-500'; break;  // Qualified
-        case 4: color = 'bg-orange-500'; break;  // Proposal
-        case 5: color = 'bg-green-500'; break;   // Closed Won
-        case 6: color = 'bg-red-500'; break;     // Closed Lost
+        case 1: color = 'bg-blue-500';   break;      // Initiated
+        case 2: color = 'bg-purple-500'; break;      // RequestedForQuote
+        case 3: color = 'bg-yellow-500'; break;      // InProgress
+        case 4: color = 'bg-orange-500'; break;      // ForwardedToCommercialDepartment
+        case 5: color = 'bg-green-500';  break;      // Negotiation
+        case 6: color = 'bg-teal-500';   break;      // Completed
+        case 7: color = 'bg-gray-700';   break;      // Closed
+        case 8: color = 'bg-red-500';    break;      // Lost
+        default: color = 'bg-gray-500';
       }
       
       return {
@@ -293,96 +230,59 @@ const CRMKanbanBoard = () => {
     });
   };
 
-  const [columns, setColumns] = useState<KanbanColumn[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [draggingCard, setDraggingCard] = useState<{columnId: number, cardId: number} | null>(null);
-  const [showCardForm, setShowCardForm] = useState(false);
-  const [newCardColumn, setNewCardColumn] = useState<number | null>(null);
-  const [activities, setActivities] = useState<CrmActivityDto[]>([]);
-  const [showActivityForm, setShowActivityForm] = useState(false);
-  const [selectedDeal, setSelectedDeal] = useState<CrmDealDto | null>(null);
-  const [newActivity, setNewActivity] = useState<Partial<CrmActivityDto>>({
-    description: '',
-    activityTypeId: 1,
-    activityDate: new Date().toISOString().split('T')[0]
-  });
   
-  const [newCard, setNewCard] = useState<Partial<CrmDealDto>>({
-    // cRMRefNo: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-    cRMRefNo: '',
-    customerId: 0,
-    serviceTypeId: 0,
-    value: '',
-    communicationStartModeId: 0,
-    communicationStartDate: new Date().toISOString(),
-    requestedServices : [],
-    recordingPersonnel : '',
-  });
-
-  // {
-  //   "referenceNumber": "string",
-  //   "customerId": 0,
-  //   "communicationStartModeId": 0,
-  //   "communicationStartDate": "2025-07-25T18:56:40.988Z",
-  //   "requestedServices": [
-  //     "string"
-  //   ],
-  //   "recordingPersonnel": "string"
-  // }
-
-  const [customerData, setCustomerData] = useState <CustomerDto | [] > ([]);
-  const [serviceTypes, setServiceTypes] = useState<ServiceTypeDto[] | [] >([]);
-  const [communicationModes , setCommunicationModes] = useState<any[]>([]); // Adjust type as needed
   // Initialize columns from sample data
   useEffect(() => {
-    setColumns(generateInitialColumns());
-
     const fetchAll = async () => {
       try {
-        const [customerRes, serviceTypeRes , communicationModesRes] = await Promise.all([
+        const [customerRes, serviceTypeRes, communicationModeRes, crmDataResp, emailTemplatesRes] = await Promise.all([
           fetch(`${API_BASE}/Core/Customers`).then(res => res.json()),
           fetch(`${API_BASE}/Crm/ServiceTypes`).then(res => res.json()),
           fetch(`${API_BASE}/Crm/CommunicationModes`).then(res => res.json()),
+          fetch(`${API_BASE}/Crm`).then(res => res.json()),
+          // fetch(`${API_BASE}/Crm/EmailTemplates`).then(res => res.json()),
         ]);
 
-        setCustomerData(customerRes);        
-        setServiceTypes(serviceTypeRes);
-        setCommunicationModes(communicationModesRes);
+        setCustomers(customerRes);        
+        setavailableServices(serviceTypeRes);
+        setCommunicationModes(communicationModeRes);
+        setCrmData(crmDataResp);
+        setEmailTemplates(fallbackEmailTemplates);
+        // setEmailTemplates(emailTemplatesRes?.filter((t: EmailTemplateDto) => t.isActive) || fallbackEmailTemplates); 
 
       } catch (error) {
         console.error("API fetch error:", error);
+        // Fallback to sample data in case of API error
+        // setCustomers([
+        //   { id: 1, name: 'Acme Corporation', email: 'contact@acme.com', phone: '123-456-7890' },
+        //   { id: 2, name: 'TechSolutions Inc', email: 'info@techsolutions.com', phone: '234-567-8901' },
+        //   { id: 3, name: 'Global Industries', email: 'sales@globalindustries.com', phone: '345-678-9012' },
+        // ]);
+        // setCommunicationModes([
+        //   { id: 1, name: 'Phone Call' , isSocialMedia : false},
+        //   { id: 2, name: 'Email', isSocialMedia : false },
+        //   { id: 3, name: 'Website Form', isSocialMedia : false },
+        // ]);
+        // setavailableServices([
+        //   { id: 1, name: 'Consulting' },
+        //   { id: 2, name: 'Software Development' },
+        //   { id: 3, name: 'Technical Support' },
+        // ]);
       } finally {
-        // setLoading(false);
+        setLoading(false);
       }
     };
 
     fetchAll();
-
-    // const fetchCustomers = async () => {
-    //   // setLoading(true);
-    //   // setError(null);
-      
-    //   try {
-    //     const response = await fetch(`${API_BASE}/Core/Customers`);
-        
-    //     if (!response.ok) {
-    //       throw new Error(`Failed to fetch customers: ${response.status}`);
-    //     }
-        
-    //     const data = await response.json();
-    //     setCustomerData(data);
-    //   } catch (err) {
-    //     console.error('Error fetching customers:', err);
-    //     // setError('Failed to load customers. Please try again later.');
-    //   } finally {
-    //     // setLoading(false);
-    //   }
-    // };
-  
-    // fetchCustomers();
   }, []);
 
-  console.log('#crmKanbanBoard customerData', customerData);
+  // Update columns when data is loaded
+  useEffect(() => {
+    if (!loading && customers.length > 0 && communicationModes.length > 0) {
+      setColumns(generateInitialColumns());
+    }
+  }, [loading, customers, communicationModes]);
+
 
   // Handle card drag start
   const handleDragStart = (e: React.DragEvent, columnId: number, cardId: number) => {
@@ -419,9 +319,9 @@ const CRMKanbanBoard = () => {
     const statusHistory: CrmStatusHistoryDto = {
       id: Math.floor(Math.random() * 1000),
       deal: card,
-      dealId: card.id,
-      previousStatus: { id: card.statusId, statusName: sourceColumn.title },
-      previousStatusId: card.statusId,
+      dealId: card.id || 0,
+      previousStatus: { id: card.statusId || 0, statusName: sourceColumn.title },
+      previousStatusId: card.statusId || 0,
       newStatus: { id: targetColumn.id, statusName: targetColumn.title },
       newStatusId: targetColumn.id,
       notes: `Status changed from ${sourceColumn.title} to ${targetColumn.title}`,
@@ -455,11 +355,6 @@ const CRMKanbanBoard = () => {
     setDraggingCard(null);
   };
 
-  // Handler for when a card is dragged over a column
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
-
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -471,8 +366,8 @@ const CRMKanbanBoard = () => {
 
     return columns.map(column => {
       const filteredCards = column.cards.filter(card => 
-        card.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        card.cRMRefNo.toLowerCase().includes(searchTerm.toLowerCase())
+        card.customer?.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        card.referenceNumber.toLowerCase().includes(searchTerm.toLowerCase())
       );
       
       return {
@@ -486,89 +381,196 @@ const CRMKanbanBoard = () => {
   // Show new card form
   const handleAddCard = (columnId: number) => {
     setNewCardColumn(columnId);
+    setIsEditMode(false);
+    setEditingCard(null);
     setShowCardForm(true);
+    // Reset form to default values
+    setNewCard({
+      referenceNumber: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      customerId: 0,
+      communicationStartModeId: 0,
+      communicationStartDate: new Date().toISOString(),
+      requestedServices: [],
+      recordingPersonnel: '',
+      value: '',
+      statusId: columnId,
+    });
+  };
+
+  // Show edit card form
+  const handleEditCard = (card: CrmDealDto , columnId : number) => {
+    setEditingCard(card);
+    setIsEditMode(true);
+    setNewCardColumn(card.statusId || 1);
+    setShowCardForm(true);
+    // Populate form with existing card data
+    setNewCard({
+      referenceNumber: card.referenceNumber,
+      customerId: card.customerId,
+      communicationStartModeId: card.communicationStartModeId,
+      communicationStartDate: card.communicationStartDate,
+      requestedServices: card.requestedServices,
+      recordingPersonnel: card.recordingPersonnel,
+      value: card.value || '',
+      statusId: columnId || card.statusId || 1,
+      status: statuses.find(s => s.id === (columnId || card.statusId))?.statusName || 'Initiated',
+    });
+
+    const testData = {
+      referenceNumber: card.referenceNumber,
+      customerId: card.customerId,
+      communicationStartModeId: card.communicationStartModeId,
+      communicationStartDate: card.communicationStartDate,
+      requestedServices: card.requestedServices,
+      recordingPersonnel: card.recordingPersonnel,
+      value: card.value || '',
+      statusId: columnId || card.statusId || 1,
+      status: statuses.find(s => s.id === (columnId || card.statusId))?.statusName || 'Initiated',
+    };
+
+    console.log('#crmKanbanBoard3 - handleEditCard: DATA', testData);
   };
 
   // Handle input change for new card form
   const handleNewCardChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-
-    // console.log('#crmKanbanBoard - handleNewCardChange: ', name, value);
     
-    // if (name === 'customerId' || name === 'serviceTypeId') {
-    //   setNewCard({ ...newCard, [name]: parseInt(value) });
-    // } else {
-    //   setNewCard({ ...newCard, [name]: value });
-    // }
+    if (name === 'customerId') {
+        try {
+          // Fetch reference number based on customer ID
+          const response : any = await fetch(`${API_BASE}/Crm/CrmReferenceNumber?customerId=${value}`);
 
-    // fetch CRM REF. Number
-    // try to fetch also 
-    try {
-        const response : any = await fetch(`${API_BASE}/Crm/CrmReferenceNumber?customerId=${value}`);
+          const data = await response.text();
+          if (!response.ok) {
+              throw new Error(`Failed to fetch CrmReferenceNumber data: ${response.status}`);
+          }
+          setNewCard({ ...newCard, referenceNumber: String(data), customerId: parseInt(value)  });
 
-        const data = await response.text();
-        if (!response.ok) {
-            throw new Error(`Failed to fetch CrmReferenceNumber data: ${response.status}`);
-        }
-        setNewCard({ ...newCard, cRMRefNo: String(data), customerId: parseInt(value) });
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        }       
+    } else if (name === 'communicationStartModeId') {
+      setNewCard({ ...newCard, [name]: parseInt(value) });
+    } else if (name === 'communicationStartDate') {
+      setNewCard({ ...newCard, [name]: new Date(value).toISOString() });
+    } else if (name === 'requestedServices') {
+      // Handle multiple service selection
+      const checkbox = e.target as HTMLInputElement;
+      const currentServices = newCard.requestedServices || []; 
 
-    } catch (error) {
-        console.error("Error fetching data:", error);
-    }
+      console.log('Checkbox checked:', checkbox.checked, 'Value:', value, 'Current Services:', currentServices);
+
+      if (checkbox.checked) {
+        setNewCard({ ...newCard, requestedServices: [...currentServices, value] });
+      } else {
+        setNewCard({ 
+          ...newCard, 
+          requestedServices: currentServices.filter(service => service !== value) 
+        });
+      }    
+    } else {
+      setNewCard({ ...newCard, [name]: value });
+    }   
   };
 
   // Save new card
-  const handleSaveCard = () => {
-    if (!newCard.customerId || newCard.customerId === 0) return;
-    if (!newCardColumn) return;
-    
-    // Find customer by ID
+  const handleSaveCard = async () => {
+    // Validation
+    if (
+      !newCard.customerId ||
+      !newCard.recordingPersonnel ||
+      !newCard.requestedServices?.length ||
+      !newCardColumn
+    ) return;
+
     const customer = customers.find(c => c.id === newCard.customerId);
-    if (!customer) return;
-    
-    // Find service type by ID
-    const serviceType = serviceTypes.find(s => s.id === newCard.serviceTypeId);
-    if (!serviceType) return;
-    
-    // Find status
-    const status = statuses.find(s => s.id === newCardColumn);
-    if (!status) return;
+    const communicationStartMode = communicationModes.find(c => c.id === newCard.communicationStartModeId);
+    const status = statuses.find(s => s.id === newCardColumn)?.statusName || 'Initiated';
+    if (!customer || !communicationStartMode || !status) return;
 
     const now = new Date().toISOString();
-    
-    // Create new CrmDealDto
-    const newDealCard: CrmDealDto = {
-      id: Math.floor(Math.random() * 1000) + 100,
-      cRMRefNo: newCard.cRMRefNo || `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-      customer: customer,
-      customerId: customer.id,
-      serviceType: serviceType,
-      serviceTypeId: serviceType.id,
-      assignedEmployeeId: Math.floor(Math.random() * 10) + 100,
-      status: status,
-      statusId: status.id,
-      createdDate: now,
-      updatedDate: null,
-      value: newCard.value || '$0'
-    };
+    let updatedColumns = columns;
+    let apiPayload: Partial<CrmDealDto>;
+    let apiMethod = 'POST';
+    let apiUrl = `${API_BASE}/Crm`;
 
-    const updatedColumns = columns.map(col => {
-      if (col.id === newCardColumn) {
-        return {
-          ...col,
-          cards: [...col.cards, newDealCard],
-          count: col.cards.length + 1
-        };
-      }
-      return col;
-    });
+    if (isEditMode && editingCard) {
+      // Update existing card
+      const updatedCard: CrmDealDto = {
+        ...editingCard,
+        ...newCard,
+        customer,
+        communicationStartMode : newCard.communicationStartModeId ? newCard.communicationStartModeId : communicationStartMode.id ,
+        updatedDate: now,
+        status : status ? status : statuses.find(s => s.id === newCardColumn)?.statusName || 'Initiated',
+      };
+
+      updatedColumns = columns.map(col => ({
+        ...col,
+        cards: col.cards.map(card => card.id === editingCard.id ? updatedCard : card)
+      }));
+
+      apiPayload = updatedCard;
+      apiMethod = 'PUT';
+    } else {
+      // Create new card
+      const newDealCard: CrmDealDto = {
+         ...newCard,
+        id: Math.floor(Math.random() * 1000) + 100,       
+        referenceNumber: newCard.referenceNumber ?? `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        customerId: newCard.customerId ?? 0,
+        customer,
+        communicationStartMode : newCard.communicationStartModeId ? newCard.communicationStartModeId : communicationStartMode.id ,
+        status : status ? status : statuses.find(s => s.id === newCardColumn)?.statusName || 'Initiated',
+        createdDate: now,
+        updatedDate: null,
+        value: newCard.value || '$0'
+      };
+
+      updatedColumns = columns.map(col =>
+        col.id === newCardColumn
+          ? { ...col, cards: [...col.cards, newDealCard], count: col.cards.length + 1 }
+          : col
+      );
+
+      apiPayload = {
+        ...newCard,
+        recordingPersonnel: "PAGAdmin"
+      };
+    }
 
     setColumns(updatedColumns);
+
+    // API call
+    try {
+      const response = await fetch(apiUrl, {
+        method: apiMethod,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(apiPayload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to save deal: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('#crmKanbanBoard3 - handleSaveCard: ', result);
+    } catch (error) {
+      console.error("Error submitting card:", error);
+    }
+
+    // Reset form and close
     setShowCardForm(false);
+    setIsEditMode(false);
+    setEditingCard(null);
     setNewCard({
-      cRMRefNo: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      referenceNumber: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
       customerId: 0,
-      serviceTypeId: 0,
+      communicationStartModeId: 0,
+      communicationStartDate: new Date().toISOString(),
+      requestedServices: [],
+      recordingPersonnel: '',
       value: '',
     });
     setNewCardColumn(null);
@@ -578,14 +580,18 @@ const CRMKanbanBoard = () => {
   const handleCancelAddCard = () => {
     setShowCardForm(false);
     setNewCard({
-      cRMRefNo: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      referenceNumber: `CRM-2025-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
       customerId: 0,
-      serviceTypeId: 0,
+      communicationStartModeId: 0,
+      communicationStartDate: new Date().toISOString(),
+      requestedServices: [],
+      recordingPersonnel: '',
       value: '',
     });
     setNewCardColumn(null);
   };
-  
+
+  // Activity management
   // Show activity form for a deal
   const handleShowActivityForm = (deal: CrmDealDto) => {
     setSelectedDeal(deal);
@@ -593,49 +599,144 @@ const CRMKanbanBoard = () => {
     setNewActivity({
       description: '',
       activityTypeId: 1,
-      activityDate: new Date().toISOString().split('T')[0]
+      activityDate: new Date().toISOString().split('T')[0],
+      communicationDate: new Date().toISOString().split('T')[0],
+      communicationMode: getActivityTypeName(newActivity.activityTypeId || 1),
+      communicationDetails: '',
+      outcome: '',
+      personContacted: '',
+      recordingPersonnel: 'PAGAdmin',
+      crmStatus: null,
+      crmStatusId: 1, // Default to 'Initiated'
     });
   };
-  
+
   // Handle activity input change
   const handleActivityChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
     if (name === 'activityTypeId') {
       setNewActivity({ ...newActivity, [name]: parseInt(value) });
+    }else if(name === 'crmStatusId') {
+      console.log('#crmKanbanBoard3 - handleActivityChange: ', statuses.find(s => s.id === parseInt(value)));
+      setNewActivity({ ...newActivity, crmStatus: statuses.find(s => s.id === parseInt(value))?.statusName || null , crmStatusId: parseInt(value) });
+
     } else {
       setNewActivity({ ...newActivity, [name]: value });
     }
   };
-  
+
   // Save new activity
-  const handleSaveActivity = () => {
-    if (!selectedDeal) return;
-    if (!newActivity.description) return;
-    
+  const handleSaveActivity = async () => {
+    if (!selectedDeal || !newActivity.description) return;
+
     const now = new Date().toISOString();
+
+    // API call
+    try {
+      // Create new activity - FOR UI
+      const activityUI: CrmActivityDto = {
+        id: Math.floor(Math.random() * 1000) + 200,
+        deal: selectedDeal,
+        dealId: selectedDeal.id || 0,
+        customer: selectedDeal.customer || { id: 0, name: '' },
+        customerId: selectedDeal.customerId,
+        activityType: { id: newActivity.activityTypeId || 1, activityName: getActivityTypeName(newActivity.activityTypeId || 1) },
+        activityTypeId: newActivity.activityTypeId || 1,
+        description: newActivity.description || '',
+        activityDate: newActivity.activityDate || now,
+        createdDate: now,
+        updatedDate: null,
+        crmStatus: newActivity.crmStatus || 'Initiated' ,
+        recordingPersonnel: 'PAGAdmin',
+        personContacted: newActivity.personContacted || '',
+        communicationMode: getActivityTypeName(newActivity.activityTypeId || 1),
+        communicationDetails: newActivity.description || '',
+        communicationDate: newActivity.communicationDate || now,
+        outcome: newActivity.crmStatus['statusName'] || 'Initiated' 
+      };
+      // Create new activity - FOR BACKEND
+      const apiActivity = {
+        communicationDate: now,
+        communicationMode: getActivityTypeName(newActivity.activityTypeId || 1),
+        communicationDetails: newActivity.description || '',
+        personContacted: newActivity.personContacted || '',
+        recordingPersonnel: 'PAGAdmin',
+        outcome: newActivity.crmStatus['statusName'] || 'Initiated' 
+      };
+      
+      console.log('#crmKanbanBoard3 - handleSaveActivity: ', apiActivity);
+
+      // Send to API
+      const response = await fetch(`${API_BASE}/Crm/${selectedDeal.id}/communications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiActivity),
+      });
+
     
-    // Create new activity
-    const activity: CrmActivityDto = {
-      id: Math.floor(Math.random() * 1000) + 200,
-      deal: selectedDeal,
-      dealId: selectedDeal.id,
-      customer: selectedDeal.customer,
-      customerId: selectedDeal.customerId,
-      activityType: { id: newActivity.activityTypeId || 1, activityName: getActivityTypeName(newActivity.activityTypeId || 1) },
-      activityTypeId: newActivity.activityTypeId || 1,
-      description: newActivity.description || '',
-      activityDate: newActivity.activityDate || now,
-      createdDate: now,
-      updatedDate: null
-    };
-    
-    // Add activity to activities state
-    setActivities([...activities, activity]);
-    
-    // Close form
-    setShowActivityForm(false);
-    setSelectedDeal(null);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to save deal: ${errorText}`);
+      }
+
+      const savedActivity = await response.json();
+      console.log('#crmKanbanBoard3 - handleSaveCard: response  ', savedActivity);
+      
+      // Update local activities state for immediate UI feedback
+      const activity: CrmActivityDto = {
+        id: savedActivity.id || Math.floor(Math.random() * 1000) + 200,
+        deal: selectedDeal,
+        dealId: selectedDeal.id || 0,
+        customer: selectedDeal.customer || { id: 0, name: '' },
+        customerId: selectedDeal.customerId,
+        activityType: { id: newActivity.activityTypeId || 1, activityName: getActivityTypeName(newActivity.activityTypeId || 1) },
+        activityTypeId: newActivity.activityTypeId || 1,
+        description: newActivity.description || '',
+        activityDate: newActivity.activityDate || now,
+        createdDate: savedActivity.createdDate || now,
+        updatedDate: null
+      };
+
+      // Add activity to activities state
+      setActivities([...activities, activity]);
+
+      if (selectedDeal.id) {
+        setDealActivities(prev => ({
+          ...prev,
+          [selectedDeal.id!]: [...(prev[selectedDeal.id!] || []), activity]
+        }));
+      }
+      
+      setShowActivityForm(false);
+      setSelectedDeal(null);
+
+    } catch (error) {
+      console.error("Error submitting card:", error);
+
+      // Fallback: save to local state only
+      const activity: CrmActivityDto = {
+        id: Math.floor(Math.random() * 1000) + 200,
+        deal: selectedDeal,
+        dealId: selectedDeal.id || 0,
+        customer: selectedDeal.customer || { id: 0, name: '' },
+        customerId: selectedDeal.customerId,
+        activityType: { id: newActivity.activityTypeId || 1, activityName: getActivityTypeName(newActivity.activityTypeId || 1) },
+        activityTypeId: newActivity.activityTypeId || 1,
+        description: newActivity.description || '',
+        activityDate: newActivity.activityDate || now,
+        createdDate: now,
+        updatedDate: null
+      };
+      
+      setActivities([...activities, activity]);
+      setShowActivityForm(false);
+      setSelectedDeal(null);
+      
+      alert('Activity saved locally. Could not sync with server.');
+    }
   };
   
   // Cancel adding new activity
@@ -654,14 +755,254 @@ const CRMKanbanBoard = () => {
       default: return 'Other';
     }
   };
-  
+
+  // Show email modal for a deal
+  const handleShowEmailModal = (deal: CrmDealDto) => {
+    setSelectedDealForEmail(deal);
+    setShowEmailModal(true);
+    setEmailForm({
+      templateId: 0,
+      to: deal.customer?.email || '',
+      cc: '',
+      bcc: '',
+      subject: '',
+      body: '',
+      priority: 'normal'
+    });
+  };
+
+  // Handle email form input change
+  const handleEmailFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEmailForm({ ...emailForm, [name]: value });
+  };
+
+  // Handle template selection and populate subject/body
+  const handleTemplateSelection = (templateId: number) => {
+    const template = emailTemplates.find(t => t.id === templateId);
+    if (!template || !selectedDealForEmail) return;
+
+    // Replace placeholders with actual data
+    const replacePlaceholders = (text: string): string => {
+      return text
+        .replace(/{{customerName}}/g, selectedDealForEmail.customer?.name || '')
+        .replace(/{{referenceNumber}}/g, selectedDealForEmail.referenceNumber)
+        .replace(/{{requestedServices}}/g, selectedDealForEmail.requestedServices.join(', '))
+        .replace(/{{recordingPersonnel}}/g, selectedDealForEmail.recordingPersonnel);
+    };
+
+    setEmailForm({
+      ...emailForm,
+      templateId: templateId,
+      subject: replacePlaceholders(template.subject),
+      body: replacePlaceholders(template.body)
+    });
+  };
+
+  // Send email
+  const handleSendEmail = async () => {
+    if (!selectedDealForEmail) return;
+    if (!emailForm.to || !emailForm.subject || !emailForm.body) {
+      alert('Please fill in all required fields (To, Subject, Body)');
+      return;
+    }
+
+    try {
+      // Here you would make an API call to send the email
+      const emailData = {
+        dealId: selectedDealForEmail.id,
+        to: emailForm.to,
+        cc: emailForm.cc,
+        bcc: emailForm.bcc,
+        subject: emailForm.subject,
+        body: emailForm.body,
+        priority: emailForm.priority,
+        templateId: emailForm.templateId || null
+      };
+
+      // Simulate API call
+      console.log('#CRMKanban- Sending email:', emailData);
+      const response = await fetch(`${API_BASE}/Crm/SendEmail`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Create activity record for email sent
+      const emailActivity: CrmActivityDto = {
+        id: Math.floor(Math.random() * 1000) + 300,
+        deal: selectedDealForEmail,
+        dealId: selectedDealForEmail.id || 0,
+        customer: selectedDealForEmail.customer || { id: 0, name: '' },
+        customerId: selectedDealForEmail.customerId,
+        activityType: { id: 3, activityName: 'Email' },
+        activityTypeId: 3,
+        description: `Email sent: ${emailForm.subject}`,
+        activityDate: new Date().toISOString(),
+        createdDate: new Date().toISOString(),
+        updatedDate: null
+      };
+
+      // Update both global activities and deal-specific cache
+      setActivities([...activities, emailActivity]);
+      
+      if (selectedDealForEmail.id) {
+        setDealActivities(prev => ({
+          ...prev,
+          [selectedDealForEmail.id!]: [...(prev[selectedDealForEmail.id!] || []), emailActivity]
+        }));
+      }
+      
+      // Close modal and reset form
+      setShowEmailModal(false);
+      setSelectedDealForEmail(null);
+      
+      alert('Email sent successfully!');
+    } catch (error) {
+      console.error('Error sending email:', error);
+      alert('Failed to send email. Please try again.');
+    }
+  };
+
+  // Cancel email
+  const handleCancelEmail = () => {
+    setShowEmailModal(false);
+    setSelectedDealForEmail(null);
+    setEmailForm({
+      templateId: 0,
+      to: '',
+      cc: '',
+      bcc: '',
+      subject: '',
+      body: '',
+      priority: 'normal'
+    });
+  };
+
+  // Activities sidebar
+  const handleShowActivitiesSidebar = async (deal: CrmDealDto) => {
+    setSelectedDealForActivities(deal);
+    setShowActivitySidebar(true);
+    
+    // Fetch activities for the selected deal
+    if (deal.id) {
+      await fetchActivitiesForDeal(deal.id);
+    }
+  };
+
+  // Close activities sidebar
+  const handleCloseActivitiesSidebar = () => {
+    setShowActivitySidebar(false);
+    setSelectedDealForActivities(null);
+  }; 
+
+  const handleToggleActivitySidebar = async () => {
+    setShowActivitySidebar(!showActivitySidebar);
+    if (!showActivitySidebar && !selectedDealForActivities && columns.length > 0) {
+      const firstDeal = columns.find(col => col.cards.length > 0)?.cards[0];
+      if (firstDeal && firstDeal.id) {
+        setSelectedDealForActivities(firstDeal);
+        await fetchActivitiesForDeal(firstDeal.id);
+      }
+    }
+  };
+
+  // Fetch activities for a specific deal
+  const fetchActivitiesForDeal = async (dealId: number): Promise<CrmActivityDto[]> => {
+    try {
+      setLoadingActivities(true);
+      
+      // Check if we already have activities for this deal
+      if (dealActivities[dealId]) {
+        setLoadingActivities(false);
+        return dealActivities[dealId];
+      }
+
+      const response = await fetch(`${API_BASE}/Crm/${dealId}/communications`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const activitiesData : CrmActivityDto[] | [] | null = await response.json();
+
+      console.log('#crmKanbanBoard3 - fetchActivitiesForDeal: ', activitiesData);
+
+      const commData = activitiesData?.map(comms => ({
+        ...comms,
+        deal: crmData.find(crm => crm.id === comms.crmId),
+        activityType : activities.find(activity => activity.id === comms.id)
+      }));
+
+      console.log('#crmKanbanBoard3 - afterFetch: ', commData);
+
+
+      // Cache the activities for this deal
+      setDealActivities(prev => ({
+        ...prev,
+        [dealId]: commData
+      }));
+      
+      setLoadingActivities(false);
+      return activitiesData;
+      
+    } catch (error) {
+      console.error(`Error fetching activities for deal ${dealId}:`, error);
+      setLoadingActivities(false);
+      
+      // Return any existing activities from local state as fallback
+      const localActivities = activities.filter(activity => activity.dealId === dealId);
+      return localActivities;
+    }
+  };
+
+  // Get activities for selected deal (updated to use API)
+  const getActivitiesForDeal = (dealId: number): CrmActivityDto[] => {
+    // Return cached activities if available, otherwise return empty array
+    // The actual fetch will be triggered when a deal is selected
+    return dealActivities[dealId] || [];
+  };
+
+  // Refresh activities for a specific deal
+  const refreshActivitiesForDeal = async (dealId: number) => {
+    try {
+      setLoadingActivities(true);
+      
+      const response = await fetch(`${API_BASE}/Crm/${dealId}/communications`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const activitiesData = await response.json();
+      
+      // Update cached activities for this deal
+      setDealActivities(prev => ({
+        ...prev,
+        [dealId]: activitiesData
+      }));
+      
+      setLoadingActivities(false);
+      
+    } catch (error) {
+      console.error(`Error refreshing activities for deal ${dealId}:`, error);
+      setLoadingActivities(false);
+    }
+  };
+
   // Calculate days in stage for a deal
   const getDaysInStage = (deal: CrmDealDto): number => {
     if (!deal.updatedDate) {
-      // If deal hasn't moved stages, calculate from created date
-      const createdDate = new Date(deal.createdDate);
+      // If deal hasn't moved stages, calculate from created date or communication start date
+      const startDate = new Date(deal.createdDate || deal.communicationStartDate);
       const today = new Date();
-      return Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+      return Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     } else {
       // If deal has moved stages, calculate from updated date
       const updatedDate = new Date(deal.updatedDate);
@@ -670,7 +1011,6 @@ const CRMKanbanBoard = () => {
     }
   };
 
-  const filteredColumns = getFilteredColumns();
   
   // Calculate total value of deals
   const calculateTotalValue = (): string => {
@@ -684,282 +1024,745 @@ const CRMKanbanBoard = () => {
     }, 0);
     
     // Format as currency
-    return `${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    return `$${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   };
 
+  // Get activity icon based on type
+  const getActivityIcon = (activityCommunicationMode: string) => {
+    switch(activityCommunicationMode) {
+      case 'Call': return <Phone className="h-4 w-4 text-blue-500" />;
+      case 'Meeting': return <Calendar className="h-4 w-4 text-green-500" />;
+      case 'Email': return <Mail className="h-4 w-4 text-purple-500" />;
+      case 'Note': return <MessageSquare className="h-4 w-4 text-yellow-500" />;
+      default: return <FileText className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  // Get activity color based on type
+  const getActivityColor = (activityCommunicationMode: string): string => {
+    switch(activityCommunicationMode) {
+      case 'Call': return 'bg-blue-100 border-blue-200';
+      case 'Meeting': return 'bg-green-100 border-green-200';
+      case 'Email': return 'bg-purple-100 border-purple-200';
+      case 'Note': return 'bg-yellow-100 border-yellow-200';
+      default: return 'bg-gray-100 border-gray-200';
+    }
+  };
+
+  const formatActivityDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return 'Today';
+    if (diffDays === 2) return 'Yesterday';
+    if (diffDays <= 7) return `${diffDays - 1} days ago`;
+    
+    return date.toLocaleDateString();
+  };
+
+  const filteredColumns = getFilteredColumns();
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading CRM data...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-full bg-gray-50">
-      {/* Header */}
-      <div className="flex justify-between items-center p-4 border-b">
-        <h1 className="text-xl font-semibold text-gray-800">CRM Pipeline</h1>
-        <div className="flex space-x-2">
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search deals..."
-              className="pl-8 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm}
-              onChange={handleSearchChange}
-            />
-          </div>
-          <button className="flex items-center px-3 py-2 bg-white border rounded-md hover:bg-gray-50">
-            <Filter className="h-4 w-4 mr-2" />
-            <span>Filters</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Kanban Board */}
-      <div className="flex-1 overflow-x-auto p-4">
-        <div className="flex space-x-4 h-full">
-          {filteredColumns.map(column => (
-            <div
-              key={column.id}
-              className="flex-shrink-0 w-72 flex flex-col bg-gray-100 rounded-md"
-              onDrop={() => handleDrop(column.id)}
-              onDragOver={(e) => e.preventDefault()}
+    <div className="flex h-full bg-gray-50">
+      {/* Main Content */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${showActivitySidebar ? 'mr-80' : ''}`}>
+        {/* Header */}
+        <div className="flex justify-between items-center p-4 border-b bg-white">
+          <h1 className="text-xl font-semibold text-gray-800">CRM Pipeline</h1>
+          <div className="flex space-x-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search deals..."
+                className="pl-8 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
+            </div>
+            <button className="flex items-center px-3 py-2 bg-white border rounded-md hover:bg-gray-50">
+              <Filter className="h-4 w-4 mr-2" />
+              <span>Filters</span>
+            </button>
+            <button 
+              className={`flex items-center px-3 py-2 border rounded-md transition-colors ${
+                showActivitySidebar 
+                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                  : 'bg-white hover:bg-gray-50'
+              }`}
+              onClick={handleToggleActivitySidebar}
             >
-              {/* Column Header */}
-              <div className="flex items-center justify-between p-3 border-b">
-                <div className="flex items-center">
-                  <div className={`w-3 h-3 rounded-full ${column.color} mr-2`}></div>
-                  <h3 className="font-medium text-gray-800">{column.title}</h3>
-                  <span className="ml-2 bg-gray-200 text-gray-700 text-xs font-medium px-2 py-0.5 rounded-full">
-                    {column.count}
-                  </span>
-                </div>
-                <button 
-                  className="text-gray-500 hover:text-gray-700"
-                  onClick={() => handleAddCard(column.id)}
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-
-              {/* Card Container */}
-              <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                {column.cards.map(card => (
-                  <div
-                    key={card.id}
-                    className="bg-white p-3 rounded-md shadow-sm cursor-grab hover:shadow-md transition-shadow"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, column.id, card.id)}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium text-gray-800">{card.customer.name}</h4>
-                      <div className="flex space-x-2">
-                        <button 
-                          className="text-gray-400 hover:text-gray-600"
-                          onClick={() => handleShowActivityForm(card)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
-                        <button className="text-gray-400 hover:text-gray-600">
-                          <MoreVertical className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-500 mb-2">{card.cRMRefNo}</p>
-                    <p className="text-sm text-gray-600 mb-1">{card.serviceType.name}</p>
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-sm font-medium text-green-600">{card.value}</span>
-                      <span className="text-xs text-gray-500">{getDaysInStage(card)} days</span>
-                    </div>
-                  </div>
-                ))}
-
-                {/* New Card Form */}
-                {showCardForm && newCardColumn === column.id && (
-                  <div className="bg-white p-3 rounded-md shadow border-2 border-blue-500">
-                    <div className="space-y-2">
-                      
-                      <select
-                        name="customerId"
-                        className="w-full p-2 border rounded text-sm"
-                        value={newCard.customerId || 0}
-                        onChange={handleNewCardChange}
-                      >
-                        <option value={0}>Select Customer...</option>
-                        {customerData.map(customer => (
-                          <option key={customer.id} value={customer.id}>{customer.name}</option>
-                        ))}
-                      </select>
-
-                      <input
-                        type="text"
-                        name="cRMRefNo"
-                        placeholder="Reference #"
-                        className="w-full p-2 border rounded text-sm"
-                        value={newCard.cRMRefNo}
-                        onChange={handleNewCardChange}
-                      />
-
-                      <select
-                        name="serviceTypeId"
-                        className="w-full p-2 border rounded text-sm"
-                        value={newCard.serviceTypeId || 0}
-                        onChange={handleNewCardChange}
-                      >
-                        <option value={0}>Select Service ...</option>
-                        {serviceTypes.map(service => (
-                          <option key={service.id} value={service.id}>{service.name}</option>
-                        ))}
-                      </select>
-                      <input
-                        type="text"
-                        name="value"
-                        placeholder="Deal value (e.g. $10,000)"
-                        className="w-full p-2 border rounded text-sm"
-                        value={newCard.value}
-                        onChange={handleNewCardChange}
-                      />
-                      <div className="flex justify-end space-x-2 mt-2">
-                        <button 
-                          className="px-3 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300"
-                          onClick={handleCancelAddCard}
-                        >
-                          Cancel
-                        </button>
-                        <button 
-                          className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                          onClick={handleSaveCard}
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Activity Form Modal */}
-      {showActivityForm && selectedDeal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Add Activity</h3>
-              <button onClick={handleCancelActivity} className="text-gray-500 hover:text-gray-700">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="mb-2">
-              <p className="text-sm font-medium text-gray-700">{selectedDeal.customer.name}</p>
-              <p className="text-xs text-gray-500">{selectedDeal.cRMRefNo}</p>
-            </div>
-            
-            <div className="space-y-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
-                <select
-                  name="activityTypeId"
-                  className="w-full p-2 border rounded"
-                  value={newActivity.activityTypeId}
-                  onChange={handleActivityChange}
-                >
-                  <option value={1}>Call</option>
-                  <option value={2}>Meeting</option>
-                  <option value={3}>Email</option>
-                  <option value={4}>Note</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                <input
-                  type="date"
-                  name="activityDate"
-                  className="w-full p-2 border rounded"
-                  value={newActivity.activityDate}
-                  onChange={handleActivityChange}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  name="description"
-                  rows={3}
-                  className="w-full p-2 border rounded"
-                  placeholder="Enter activity details..."
-                  value={newActivity.description}
-                  onChange={handleActivityChange}
-                ></textarea>
-              </div>
-            </div>
-            
-            <div className="flex justify-end">
-              <button
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                onClick={handleSaveActivity}
-              >
-                Save Activity
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Activities List Panel */}
-      {activities.length > 0 && (
-        <div className="border-t bg-white p-4 max-h-64 overflow-y-auto">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="font-medium text-gray-800">Recent Activities</h3>
-            <button className="text-sm text-blue-500 hover:text-blue-700">View All</button>
-          </div>
-          <div className="space-y-3">
-            {activities.slice().reverse().slice(0, 5).map(activity => (
-              <div key={activity.id} className="flex border-b pb-2">
-                <div className="mr-3">
-                  {activity.activityTypeId === 1 && <Phone className="h-5 w-5 text-blue-500" />}
-                  {activity.activityTypeId === 2 && <Calendar className="h-5 w-5 text-green-500" />}
-                  {activity.activityTypeId === 3 && <Mail className="h-5 w-5 text-purple-500" />}
-                  {activity.activityTypeId === 4 && <MessageSquare className="h-5 w-5 text-yellow-500" />}
-                </div>
-                <div>
-                  <div className="flex items-center mb-1">
-                    <p className="text-sm font-medium mr-2">{activity.customer.name}</p>
-                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">{activity.activityType.activityName}</span>
-                  </div>
-                  <p className="text-sm text-gray-600">{activity.description}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(activity.activityDate).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Statistics Footer */}
-      <div className="p-4 border-t bg-white">
-        <div className="flex justify-between">
-          <div className="flex space-x-4">
-            <div>
-              <span className="text-sm text-gray-500">Total Deals</span>
-              <p className="font-medium">{columns.reduce((acc, col) => acc + col.count, 0)}</p>
-            </div>
-            <div>
-              <span className="text-sm text-gray-500">Total Value</span>
-              <p className="font-medium text-green-600">{calculateTotalValue()}</p>
-            </div>
-          </div>
-          <div className="flex items-center">
-            <button className="flex items-center px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-              <span>View Reports</span>
-              <ChevronDown className="ml-1 h-4 w-4" />
+              <Clock className="h-4 w-4 mr-2" />
+              <span>Activities</span>
+              {activities.length > 0 && (
+                <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                  {activities.length}
+                </span>
+              )}
             </button>
           </div>
         </div>
+
+          {/* Kanban Board */}
+          <div className="flex-1 overflow-x-auto p-4">
+            <div className="flex space-x-4 h-full">
+              {filteredColumns.map(column => (
+                <div
+                  key={column.id}
+                  className="flex-shrink-0 w-72 flex flex-col bg-gray-100 rounded-md"
+                  onDrop={() => handleDrop(column.id)}
+                  onDragOver={(e) => e.preventDefault()}
+                >
+                  {/* Column Header */}
+                  <div className="flex items-center justify-between p-3 border-b">
+                    <div className="flex items-center">
+                      <div className={`w-3 h-3 rounded-full ${column.color} mr-2`}></div>
+                      <h3 className="font-medium text-gray-800">{column.title}</h3>
+                      <span className="ml-2 bg-gray-200 text-gray-700 text-xs font-medium px-2 py-0.5 rounded-full">
+                        {column.count}
+                      </span>
+                    </div>
+                    <button 
+                      className="text-gray-500 hover:text-gray-700"
+                      onClick={() => handleAddCard(column.id)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* Card Container */}
+                  <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                    {column.cards.map(card => (
+                      <div
+                        key={card.id}
+                        className="bg-white p-3 rounded-md shadow-sm cursor-grab hover:shadow-md transition-shadow"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, column.id, card.id || 0)}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          {/* <h4 className="font-medium text-gray-800">{card.customer?.name}</h4> */}
+                          <h4 
+                            className="font-medium text-gray-800 cursor-pointer hover:text-blue-600 flex-1"
+                            onClick={() => handleShowActivitiesSidebar(card)}
+                          >
+                            {card.customer?.name}
+                          </h4>
+                          <div className="flex space-x-1">
+                            <button 
+                              className="text-gray-400 hover:text-gray-600"
+                               onClick={(e) => {
+                                e.stopPropagation();
+                                handleShowActivityForm(card);
+                              }}
+                              title="Add Activity"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                            <button 
+                              className="text-gray-400 hover:text-green-600 p-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleShowEmailModal(card);
+                              }}
+                              title="Send Email"
+                            >
+                              <Send className="h-4 w-4" />
+                            </button>
+                            <button 
+                                className="text-gray-400 hover:text-gray-600"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditCard(card, column.id);
+                                }}
+                                title="Edit Deal"
+                              >
+                              <Edit className="h-4 w-4" />
+                            </button>                          
+                            <button 
+                              className="text-gray-400 hover:text-gray-600"
+                               onClick={(e) => {
+                                e.stopPropagation();
+                                handleShowActivitiesSidebar(card);
+                              }}
+                              title="Show Activity"
+                            >
+                              <BookText className="h-4 w-4" />
+                            </button> 
+                          </div>
+                        </div>
+                        <p 
+                          className="text-xs text-gray-500 mb-2 cursor-pointer hover:text-blue-600" 
+                          onClick={() => handleEditCard(card, column.id)} 
+                        >
+                          {card.referenceNumber}
+                        </p>
+                        <div className="mb-2">
+                          <p className="text-xs text-gray-500 mb-1">Services:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {card.requestedServices.slice(0, 2).map((service, idx) => (
+                              <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                                {service}
+                              </span>
+                            ))}
+                            {card.requestedServices.length > 2 && (
+                              <span className="text-xs text-gray-400">+{card.requestedServices.length - 2} more</span>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-600 mb-2" onClick={() => handleEditCard(card , column.id)}>by {card.recordingPersonnel}</p> 
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-sm font-medium text-green-600">{card.value}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">{getDaysInStage(card)} days</span>
+                            {getActivitiesForDeal(card.id || 0).length > 0 && (
+                              <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">
+                                {getActivitiesForDeal(card.id || 0).length}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* New/ Edit Card Form */}
+                    {showCardForm && newCardColumn === column.id && (
+                      <div className="bg-white p-3 rounded-md shadow border-2 border-blue-500">
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-medium text-gray-800">
+                            {isEditMode ? 'Edit Deal' : 'New Deal'}
+                          </h4>
+                          {isEditMode && (
+                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                              Editing
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-2"> 
+                          <select
+                            name="customerId"
+                            className="w-full p-2 border rounded text-sm"
+                            value={newCard.customerId || 0}
+                            onChange={handleNewCardChange}
+                          >
+                            <option value={0}>Select customer...</option>
+                            {customers.map(customer => (
+                              <option key={customer.id} value={customer.id}>{customer.name}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            name="referenceNumber"
+                            placeholder="Reference #"
+                            className="w-full p-2 border rounded text-sm"
+                            value={isEditMode ? crmData.find(crmData => crmData.customerId == newCard.customerId  ) ?.referenceNumber : newCard.referenceNumber}
+                            onChange={handleNewCardChange}
+                            disabled={isEditMode}
+                          />
+                          <select
+                            name="communicationStartModeId"
+                            className="w-full p-2 border rounded text-sm"
+                            value={newCard.communicationStartModeId || 0}
+                            onChange={handleNewCardChange}
+                          >
+                            <option value={0}>Select Comm. Mode ..</option>
+                            {communicationModes.map(mode => (
+                              <option key={mode.id} value={mode.id}>{mode.name}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="datetime-local"
+                            name="communicationStartDate"
+                            className="w-full p-2 border rounded text-sm"
+                            value={newCard.communicationStartDate ? new Date(newCard.communicationStartDate).toISOString().slice(0, 16) : ''}
+                            onChange={handleNewCardChange}
+                          />
+                          <div>
+                            <p className="text-sm text-gray-700 mb-2">Requested Services:</p>
+                            <div className="space-y-1 max-h-24 overflow-y-auto">
+                              {availableServices.map(service => (
+                                <label key={service.id} className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    name="requestedServices"
+                                    value={service.name}
+                                    checked={Array.isArray(newCard.requestedServices) && newCard.requestedServices.includes(service.name)}
+                                    onChange={handleNewCardChange}
+                                    className="mr-2"
+                                  />
+                                  <span className="text-sm">{service.name}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                          <input
+                            type="text"
+                            name="recordingPersonnel"
+                            placeholder="Recording personnel"
+                            className="w-full p-2 border rounded text-sm"
+                            value={newCard.recordingPersonnel}
+                            onChange={handleNewCardChange}
+                          />
+                          <input
+                            type="text"
+                            name="value"
+                            placeholder="Deal value (e.g. $10,000)"
+                            className="w-full p-2 border rounded text-sm"
+                            value={newCard.value}
+                            onChange={handleNewCardChange}
+                          />
+                          <div className="flex justify-end space-x-2 mt-2">
+                            <button 
+                              className="px-3 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300"
+                              onClick={handleCancelAddCard}
+                            >
+                              Cancel
+                            </button>
+                            <button 
+                              className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                              onClick={handleSaveCard}
+                            >
+                              {isEditMode ? 'Update' : 'Save'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Statistics Footer */}
+          <div className="p-4 border-t bg-white">
+            <div className="flex justify-between">
+              <div className="flex space-x-4">
+                <div>
+                  <span className="text-sm text-gray-500">Total Deals</span>
+                  <p className="font-medium">{columns.reduce((acc, col) => acc + col.count, 0)}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">Total Value</span>
+                  <p className="font-medium text-green-600">{calculateTotalValue()}</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <button className="flex items-center px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                  <span>View Reports</span>
+                  <ChevronDown className="ml-1 h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>       
+
+          {/* Activities Sidebar */}
+          {showActivitySidebar && (
+            <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-lg z-40 flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b">
+                <div className="flex items-center">
+                  <Clock className="h-5 w-5 text-blue-500 mr-2" />
+                  <h3 className="font-medium text-gray-800">Activities</h3>
+                </div>
+                <button 
+                  onClick={() => setShowActivitySidebar(false)}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+    
+              {/* Deal Selection */}
+              <div className="p-4 border-b bg-gray-50">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select Deal:</label>
+                <select
+                  className="w-full p-2 border rounded-md text-sm"
+                  value={selectedDealForActivities?.id || ''}
+                  onChange={async (e) => {
+                    const dealId = parseInt(e.target.value);
+                    const deal = columns.flatMap(col => col.cards).find(card => card.id === dealId);
+                    if (deal) {
+                      setSelectedDealForActivities(deal);
+                      // Fetch activities for the newly selected deal
+                      if (deal.id) {
+                        await fetchActivitiesForDeal(deal.id);
+                      }
+                    }
+                  }}
+                >
+                  <option value="">Select a deal...</option>
+                  {columns.flatMap(col => col.cards).map(deal => (
+                    <option key={deal.id} value={deal.id}>
+                      {deal.customer?.name} - {deal.referenceNumber}
+                    </option>
+                  ))}
+                </select>
+              </div>
+    
+              {/* Deal Info */}
+              {selectedDealForActivities && (
+                <div className="p-4 border-b bg-gray-50">
+                  <h4 className="font-medium text-gray-800">{selectedDealForActivities.customer?.name}</h4>
+                  <p className="text-sm text-gray-600">{selectedDealForActivities.referenceNumber}</p>
+                  <div className="flex items-center mt-2 space-x-2">
+                    <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      {selectedDealForActivities.status?.statusName}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {getActivitiesForDeal(selectedDealForActivities.id || 0).length} activities
+                    </span>
+                  </div>
+                </div>
+              )}
+    
+              {/* Activities List */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {loadingActivities && (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-gray-500 text-sm">Loading activities...</div>
+                  </div>
+                )}
+                
+                {!loadingActivities && selectedDealForActivities ? (
+                  <>
+                    {getActivitiesForDeal(selectedDealForActivities.id || 0).length > 0 ? (
+                      <div className="space-y-3">
+                        {getActivitiesForDeal(selectedDealForActivities.id || 0)
+                          .sort((a, b) => new Date(b.createDate).getTime() - new Date(a.createDate).getTime())
+                          .map(activity => (
+                          <div 
+                            key={activity.id} 
+                            className={`p-3 rounded-lg border ${getActivityColor(activity.communicationMode)} hover:shadow-sm transition-shadow`}
+                          >
+                            <div className="flex items-start space-x-3">
+                              <div className="flex-shrink-0 mt-1">
+                                {getActivityIcon(activity.communicationMode)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+                                    {activity.outcome}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {formatActivityDate(activity.createDate)}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-800 mb-1">{activity.communicationDetails}</p>
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <User className="h-3 w-3 mr-1" />
+                                  <span>{activity.recordingPersonnel}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <MessageSquare className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 text-sm">No activities yet</p>
+                        <p className="text-gray-400 text-xs mt-1">
+                          Activities will appear here as they happen
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : !loadingActivities && (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Clock className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 text-sm">Select a deal</p>
+                    <p className="text-gray-400 text-xs mt-1">
+                      Choose a deal to view its activities
+                    </p>
+                  </div>
+                )}
+              </div>
+    
+              {/* Quick Actions */}
+              {selectedDealForActivities && (
+                <div className="p-4 border-t bg-gray-50">
+                  <div className="flex space-x-2 mb-2">
+                    <button 
+                      className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+                      onClick={() => handleShowActivityForm(selectedDealForActivities)}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Activity
+                    </button>
+                    <button 
+                      className="flex-1 flex items-center justify-center px-3 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
+                      onClick={() => handleShowEmailModal(selectedDealForActivities)}
+                    >
+                      <Send className="h-4 w-4 mr-1" />
+                      Send Email
+                    </button>
+                  </div>
+                  <button 
+                    className="w-full flex items-center justify-center px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 text-sm"
+                    onClick={() => {
+                      if (selectedDealForActivities.id) {
+                        refreshActivitiesForDeal(selectedDealForActivities.id);
+                      }
+                    }}
+                    disabled={loadingActivities}
+                  >
+                    <Clock className="h-4 w-4 mr-1" />
+                    {loadingActivities ? 'Refreshing...' : 'Refresh Activities'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Activity Form Modal */}
+          {showActivityForm && selectedDeal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-96 max-w-md">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium">Add Activity</h3>
+                  <button onClick={handleCancelActivity} className="text-gray-500 hover:text-gray-700">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                <div className="mb-2">
+                  <p className="text-sm font-medium text-gray-700">{selectedDeal.customer?.name}</p>
+                  <p className="text-xs text-gray-500">{selectedDeal.referenceNumber}</p>
+                </div>
+                
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
+                    <select
+                      name="activityTypeId"
+                      className="w-full p-2 border rounded"
+                      value={newActivity.activityTypeId}
+                      onChange={handleActivityChange}
+                    >
+                      <option value={1}>Call</option>
+                      <option value={2}>Meeting</option>
+                      <option value={3}>Email</option>
+                      <option value={4}>Note</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <input
+                      type="date"
+                      name="activityDate"
+                      className="w-full p-2 border rounded"
+                      value={newActivity.activityDate}
+                      onChange={handleActivityChange}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Person Contacted</label>
+                    <input
+                      type="text"
+                      name="personContacted"
+                      className="w-full p-2 border rounded"
+                      value={newActivity.personContacted}
+                      onChange={handleActivityChange}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      name="description"
+                      rows={3}
+                      className="w-full p-2 border rounded"
+                      placeholder="Enter activity details..."
+                      value={newActivity.description}
+                      onChange={handleActivityChange}
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
+                    <select
+                      name="crmStatusId"
+                      className="w-full p-2 border rounded"
+                      value={newActivity.crmStatusId}
+                      onChange={handleActivityChange}
+                    >
+                      <option value={1}>Initiated</option>
+                      <option value={2}>RequestedForQuote</option>
+                      <option value={3}>Other</option>
+                      <option value={4}>ForwardedToCommercialDepartment</option>
+                      <option value={5}>Negotiation</option>
+                      <option value={6}>Completed</option>
+                      <option value={7}>Closed</option>
+                      <option value={8}>Lost</option>
+                    </select>
+                  </div>
+
+                </div>
+                
+                <div className="flex justify-end">
+                  <button
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    onClick={handleSaveActivity}
+                  >
+                    Save Activity
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Email Modal */}
+          {showEmailModal && selectedDealForEmail && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium">Send Email</h3>
+                  <button onClick={handleCancelEmail} className="text-gray-500 hover:text-gray-700">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                <div className="mb-4 p-3 bg-gray-50 rounded">
+                  <p className="text-sm font-medium text-gray-700">Deal: {selectedDealForEmail.customer?.name}</p>
+                  <p className="text-xs text-gray-500">{selectedDealForEmail.referenceNumber}</p>
+                </div>
+                
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Template</label>
+                    <select
+                      name="templateId"
+                      className="w-full p-2 border rounded"
+                      value={emailForm.templateId}
+                      onChange={(e) => {
+                        handleEmailFormChange(e);
+                        if (e.target.value !== '0') {
+                          handleTemplateSelection(parseInt(e.target.value));
+                        }
+                      }}
+                    >
+                      <option value={0}>Select a template...</option>
+                      {emailTemplates.map(template => (
+                        <option key={template.id} value={template.id}>{template.templateName}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">To *</label>
+                    <input
+                      type="email"
+                      name="to"
+                      className="w-full p-2 border rounded"
+                      placeholder="recipient@example.com"
+                      value={emailForm.to}
+                      onChange={handleEmailFormChange}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">CC</label>
+                      <input
+                        type="email"
+                        name="cc"
+                        className="w-full p-2 border rounded"
+                        placeholder="cc@example.com"
+                        value={emailForm.cc}
+                        onChange={handleEmailFormChange}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">BCC</label>
+                      <input
+                        type="email"
+                        name="bcc"
+                        className="w-full p-2 border rounded"
+                        placeholder="bcc@example.com"
+                        value={emailForm.bcc}
+                        onChange={handleEmailFormChange}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <select
+                      name="priority"
+                      className="w-full p-2 border rounded"
+                      value={emailForm.priority}
+                      onChange={handleEmailFormChange}
+                    >
+                      <option value="low">Low</option>
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
+                    <input
+                      type="text"
+                      name="subject"
+                      className="w-full p-2 border rounded"
+                      placeholder="Enter email subject"
+                      value={emailForm.subject}
+                      onChange={handleEmailFormChange}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+                    <textarea
+                      name="body"
+                      rows={8}
+                      className="w-full p-2 border rounded"
+                      placeholder="Enter your message here..."
+                      value={emailForm.body}
+                      onChange={handleEmailFormChange}
+                      required
+                    ></textarea>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-2">
+                  <button
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                    onClick={handleCancelEmail}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center"
+                    onClick={handleSendEmail}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Send Email
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
       </div>
     </div>
   );
 };
 
-export default CRMKanbanBoard;
+export default CrmKanbanBoard;

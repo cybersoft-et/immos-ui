@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Bell, Moon, Sun, Menu, ChevronDown, Search, X } from 'lucide-react';
+import  { useState } from 'react';
+import { Bell, Moon, Sun, ChevronDown, Search, X } from 'lucide-react';
+import { useAuth } from '../../../auth/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 // Notification component
 const NotificationItem = ({ title, time, isNew, onClick }) => (
@@ -18,7 +20,7 @@ const NotificationItem = ({ title, time, isNew, onClick }) => (
   </div>
 );
 
-const Header = ({ userName = "Taylor Thompson", userAvatar = "/api/placeholder/40/40" }) => {
+const Header = ({ userName = "PAG-ADMIN", userAvatar = "/api/placeholder/40/40" }) => {
   // State management
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -69,6 +71,14 @@ const Header = ({ userName = "Taylor Thompson", userAvatar = "/api/placeholder/4
     if (e.key === 'Enter') {
       handleSearchSubmit();
     }
+  };
+
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   return (
@@ -181,12 +191,12 @@ const Header = ({ userName = "Taylor Thompson", userAvatar = "/api/placeholder/4
             <div className="w-9 h-9 rounded-full overflow-hidden">
               <img 
                 src={userAvatar} 
-                alt={userName} 
+                alt={user?.userName} 
                 className="w-full h-full object-cover"
               />
             </div>
             <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              {userName}
+              Welcome, {user?.userName}
             </span>
             <ChevronDown size={16} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />
           </button>
@@ -222,14 +232,20 @@ const Header = ({ userName = "Taylor Thompson", userAvatar = "/api/placeholder/4
                   Account
                 </a>
                 <hr className={isDarkMode ? 'border-gray-700' : 'border-gray-200'} />
-                <a 
-                  href="#signout" 
+                <button              
+                  onClick={handleLogout}
                   className={`block px-4 py-2 text-sm ${
                     isDarkMode ? 'text-red-400 hover:bg-gray-700' : 'text-red-500 hover:bg-gray-100'
                   }`}
                 >
                   Sign out
-                </a>
+                </button>
+                {/* <button
+                  onClick={handleLogout}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Logout
+                </button> */}
               </div>
             </div>
           )}
