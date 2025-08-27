@@ -190,13 +190,13 @@ const Header = ({ userName = "PAG-ADMIN", userAvatar = "/api/placeholder/40/40" 
           >
             <div className="w-9 h-9 rounded-full overflow-hidden">
               <img 
-                src={userAvatar} 
+                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
                 alt={user?.userName} 
                 className="w-full h-full object-cover"
               />
             </div>
             <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Welcome, {user?.userName}
+              Hey, {user?.userName}
             </span>
             <ChevronDown size={16} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />
           </button>
@@ -208,7 +208,7 @@ const Header = ({ userName = "PAG-ADMIN", userAvatar = "/api/placeholder/40/40" 
             }`}>
               <div className="py-1">
                 <a 
-                  href="#profile" 
+                  href="#" 
                   className={`block px-4 py-2 text-sm ${
                     isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
                   }`}
@@ -216,7 +216,7 @@ const Header = ({ userName = "PAG-ADMIN", userAvatar = "/api/placeholder/40/40" 
                   Your Profile
                 </a>
                 <a 
-                  href="#settings" 
+                  href="#" 
                   className={`block px-4 py-2 text-sm ${
                     isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
                   }`}
@@ -239,13 +239,7 @@ const Header = ({ userName = "PAG-ADMIN", userAvatar = "/api/placeholder/40/40" 
                   }`}
                 >
                   Sign out
-                </button>
-                {/* <button
-                  onClick={handleLogout}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Logout
-                </button> */}
+                </button>               
               </div>
             </div>
           )}

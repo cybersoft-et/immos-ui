@@ -1,7 +1,4 @@
-// API utility with authentication interceptor
-// const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL;
-const API_FILE_BASE: string = import.meta.env.VITE_API_FILE_BASE_URL;
 
 interface ApiOptions extends RequestInit {
   requireAuth?: boolean;

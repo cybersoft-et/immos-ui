@@ -1,19 +1,29 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import { useNavigate } from 'react-router-dom';
 import { AllCommunityModule, ModuleRegistry, provideGlobalGridOptions } from 'ag-grid-community';
 
+// type RowData = {
+//   id: number;
+//   name: string;
+//   customerType : string;
+//   email: string;
+//   telephoneNumber: string;
+//   industry: string;
+// };
+
 const CustomerList = () => {
+  const API_BASE: string = import.meta.env.VITE_API_BASE_URL;
+  
   const gridRef = useRef(null);
   const navigate = useNavigate();
   const [rowData, setRowData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null as string | null);
 
-  // Column definitions
-  const [columnDefs] = useState([
+   const [columnDefs] = useState([
     { 
       field: 'id', 
       headerName: 'ID', 
@@ -61,7 +71,7 @@ const CustomerList = () => {
       width: 120,
       sortable: false,
       filter: false,
-      cellRenderer: (params) => {
+      cellRenderer: (params: { data: { id: any; }; }) => {
         return (
           <div className="flex space-x-2">
             <button
@@ -89,11 +99,11 @@ const CustomerList = () => {
   };
 
 // Inside your CustomerList component
-const handleEditCustomer = useCallback((customerId) => {
+const handleEditCustomer = useCallback((customerId: any) => {
   navigate(`/customerform/edit/${customerId}`);
 }, [navigate]);
   
-const handleViewCustomer = useCallback((customerId) => {
+const handleViewCustomer = useCallback((customerId: any) => {
   navigate(`/customerform/view/${customerId}`);
 }, [navigate]);
   
@@ -110,7 +120,7 @@ useEffect(() => {
     setError(null);
     
     try {
-      const response = await fetch('https://localhost:8000/api/core/Customers');
+      const response = await fetch(`${API_BASE}/core/Customers`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch customers: ${response.status}`);
@@ -136,7 +146,7 @@ const handleRefresh = async () => {
   setError(null);
   
   try {
-    const response = await fetch('https://localhost:8000/api/core/Customers');
+    const response = await fetch(`${API_BASE}/core/Customers`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch customers: ${response.status}`);
@@ -203,17 +213,15 @@ const handleRefresh = async () => {
       
       {/* AG Grid component */}
       <div className="ag-theme-alpine w-full" style={{ height: 600 }}>
-        <AgGridReact
+        
+         <AgGridReact
           ref={gridRef}
           rowData={rowData}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
           animateRows={true}
-          // rowSelection={{ type: 'multiple' }}
-          // rowSelection="singleRow"
-          // rowSelection={{ type: "multiRow" }}
-          // rowSelection={{ type: "singleRow" }}
-          rowSelection={{ type: "singleRow" }}
+          rowSelection="single"
+          // rowSelection={{ type: 'multiple' }} 
           pagination={true}
           paginationPageSize={50}
           domLayout='autoHeight'

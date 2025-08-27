@@ -16,6 +16,7 @@ interface IContactPerson {
 
 interface IDocument {
   documentId: number;
+  customerId?: number;
 }
 
 interface IFormInput {
@@ -87,7 +88,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
   const fileInputRef = useRef(null);
   const gridRef = useRef(null);
   
-  const { register, handleSubmit, control, formState: { errors }, reset, setValue, watch } = useForm<IFormInput>({
+  const { register, handleSubmit, control, formState: { errors }, reset, setValue, watch , getValues  } = useForm<IFormInput>({
     defaultValues: {
       id: 0,
       name: '',
@@ -147,6 +148,11 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     },
   });
 
+   const { fields, append } = useFieldArray({
+    control,
+    name: "documents",
+  });
+
   const [documentForm, setDocumentForm] = useState({
     Name: '',
     Description: '',
@@ -191,6 +197,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
         });
 
         setValue('consecutiveNo', consecutiveNoRes);
+        //@ts-ignore
         setValue('createDate', today);
 
       } catch (error) {
@@ -227,7 +234,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       
       // Process documents for the grid
       if (data.documents && data.documents.length > 0) {
-        const formattedDocs = data.documents.map(doc => ({
+        const formattedDocs = data.documents.map( doc => ({
           documentId: doc.documentId,
           name: doc.document.name || 'Untitled',
           documentType: doc.document.name || 'Unknown',
@@ -340,7 +347,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
               contentType : data.contentType || 'application/octet-stream',
               documentPath : '' ,
             };
-            
+             //@ts-ignore
             setUploadedDocuments([formattedDocs]);
             console.log("CustomerForm - fetchDocuments -SINGLE- Documents loaded successfully:", data);
 
@@ -358,7 +365,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
               contentType : data[0].contentType || 'application/octet-stream',
               documentPath : '' ,
             };
-            
+             //@ts-ignore
             setUploadedDocuments([formattedDocs]);
             console.log("CustomerForm - fetchDocuments -SINGLE- Documents loaded successfully:", data);
 
@@ -435,15 +442,15 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     { field: 'documentTypeId', headerName: 'Type ID', sortable: true, filter: true, width: 100 },
     { field: 'contentType', headerName: 'File Type', sortable: true, filter: true, width: 120 },
     { field: 'size', headerName: 'Size', sortable: true, filter: true, width: 100,
-      valueFormatter: params => formatFileSize(params.value)
+      valueFormatter: (params: { value: number; }) => formatFileSize(params.value)
     },
     { field: 'createDate', headerName: 'Upload Date', sortable: true, filter: true, width: 160,
-      valueFormatter: params => formatDate(params.value)
+      valueFormatter: (params: { value: string | number | Date; }) => formatDate(params.value)
     },
     {
       headerName: 'Actions',
       width: 120,
-      cellRenderer: (params) => {
+      cellRenderer: (params : any) => {
         return (
           <div className="flex space-x-2">
             <button
@@ -468,14 +475,14 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
   ]);
 
    // Function to handle viewing a document
-   const handleViewDocument = (documentId) => {
+   const handleViewDocument = (documentId: React.SetStateAction<null>) => {
     setViewDocumentId(documentId);
     setIsViewDialogOpen(true);
     console.log(`Viewing document: ${documentId} , ${uploadedDocuments}`);
   };
   
   // Function to handle document deletion
-  const handleDeleteDocument = (documentId) => {
+  const handleDeleteDocument = (documentId: number) => {
     // Don't allow deletion in view-only mode
     if (isViewOnly) return;
     
@@ -488,7 +495,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     // fetch(`${API_BASE}/documents/${documentId}`, { method: 'DELETE' })
     
     // Filter out the document with the given ID from both state arrays
-    const updatedDocuments = uploadedDocuments.filter(doc => doc.id !== documentd);
+    const updatedDocuments = uploadedDocuments.filter(doc => doc.id !== documentId);
     setUploadedDocuments(updatedDocuments);
     
     // Update the react-hook-form documents array
@@ -499,7 +506,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
   };
   
   // Format file size
-  const formatFileSize = (bytes) => {
+  const formatFileSize = (bytes: number) => {
     if (!bytes) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -508,7 +515,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
   };
   
   // Format date
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string | number | Date) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleString();
@@ -527,7 +534,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     const value = e.target.value;
     console.log('#CustomerForm - BLUR: ', value);
     try {
-      const response : any = await fetch(`${API_BASE}/core/Customers/CustomerId?customerName=${value}`);
+      const response = await fetch(`${API_BASE}/core/Customers/CustomerId?customerName=${value}`);
 
       const data = await response.json();
       if (!response.ok) {
@@ -544,16 +551,17 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     }
   };
   
-  
+  //@ts-ignore
   const { fields: documentFields, append: appendDocument, remove: removeDocument, replace: replaceDocuments } = useFieldArray({
     control,
     name: 'documents',
   });
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: any) => {
     // If view only, don't submit
     if (isViewOnly) return;
-    
+
+    console.log('#CustomerForm - onSubmit - Form Data: ', data);
     setIsSubmitting(true);
     setSubmitError('');
     setSubmitSuccess('');
@@ -587,12 +595,12 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       // If creating a new customer, reset the form
       if (!editId) {
         reset();
-        setUploadedDocuments([]);
+        // setUploadedDocuments([]);
       }
 
       // After successful upload, refresh the documents list
       if(editId !== null && editId !== undefined && editId !== 0) {
-        navigate('customerform/edit/:id'.replace(':id', editId));
+        // navigate('customerform/edit/:id'.replace(':id', editId));
         fetchDocuments(editId); // replaced to fetch docs by ID
         console.log('#CustomerForm - onSubmit - Fetching documents for Customer: ', editId);
 
@@ -693,25 +701,43 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       responseData = await response.json();
       console.log('CustomerForm - handleDocumentSubmit - response :', responseData);
 
-      // Append the new document to the uploaded documents state
-      setValue('documents', [{
-        documentId: responseData.id,        
-      }]);
-            
-      // After successful upload, refresh the documents list
-      if(editId !== null && editId !== undefined && editId !== 0) {
-        fetchDocuments(editId); // replaced to fetch docs by ID
-        console.log('#CustomerForm - handleDocumentSubmit - Fetching documents for Customer: ', editId);
-
-      }else{
-        fetchDocuments(0, responseData?.id); // replace documents in the form
-        console.log('#CustomerForm - handleDocumentSubmit - Fetching documents for New User: ', responseData?.id);
-      }
-
     } catch (error) {
       setUploadError('Failed to upload document. Please try again.');
     } finally {
       setIsUploading(false);
+      // After successful upload, refresh the documents list
+      if(editId !== null && editId !== undefined && editId !== 0) {
+         setValue('documents', [{
+            ...documents ,
+            documentId: responseData.id,        
+          }]);
+        fetchDocuments(editId); // replaced to fetch docs by ID
+        console.log('#CustomerForm - handleDocumentSubmit - Fetching documents for Customer: ', editId);
+
+      }else{
+        // Append the new document to the uploaded documents state
+        const formDocuments = getValues("documents");
+        console.log('#CustomerForm - handleDocumentSubmit - Form-Documents : ', formDocuments);
+
+        if(formDocuments.length === 0){
+          setValue('documents', [{    
+            documentId: responseData.id, 
+            customerId: responseData.createUserId      
+          }]);
+
+        } else{          
+          append({         
+            documentId: responseData.id, 
+            customerId: responseData.createUserId
+          })    
+        }
+                const formDocuments2 = getValues("documents");
+        console.log('#CustomerForm - handleDocumentSubmit - After-Appened : ', formDocuments2);
+        fetchDocuments(0, responseData?.id); // replace documents in the form
+        console.log('#CustomerForm - handleDocumentSubmit - Fetching documents for New User: ', responseData?.id);
+      }
+
+      setUploadError('');
     }
   };
 
@@ -1406,7 +1432,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                       value={documentForm.Description}
                       onChange={handleDocumentInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      rows="3"
+                      rows={3}
                     ></textarea>
                   </div>
                   

@@ -58,6 +58,7 @@ const Sidebar = ( ) => {
   };
 
   const renderMenuItems = (items) => {
+     {/* @ts-ignore */}
     return items.map((item) => (
       <div key={item.key} className="mb-1">
         <div 
@@ -93,6 +94,7 @@ const Sidebar = ( ) => {
         
         {!collapsed && item.submenu && openSubmenu === item.key && (
           <div className="ml-6 pl-3 border-l border-gray-200">
+            {/* @ts-ignore */}
             {item.submenu.map((subItem) => (
               <div 
                 key={subItem.key} 
@@ -167,7 +169,7 @@ const Sidebar = ( ) => {
 };
 
 // Mock components for the icons if not imported
-const Home = (props) => (
+const Home = (props: { size: string | number | undefined; }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
     width={props.size} 
@@ -184,7 +186,7 @@ const Home = (props) => (
   </svg>
 );
 
-const NotebookText = (props) => (
+const NotebookText = (props: { size: string | number | undefined; }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
     width={props.size} 
@@ -203,7 +205,7 @@ const NotebookText = (props) => (
   </svg>
 );
 
-const ShoppingCart = (props) => (
+const ShoppingCart = (props: { size: string | number | undefined; }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
     width={props.size} 
@@ -221,7 +223,7 @@ const ShoppingCart = (props) => (
   </svg>
 );
 
-const MessageSquare = (props) => (
+const MessageSquare = (props: { size: string | number | undefined; }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
     width={props.size} 
@@ -237,7 +239,7 @@ const MessageSquare = (props) => (
   </svg>
 );
 
-const Truck = (props) => (
+const Truck = (props: { size: string | number | undefined; }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
     width={props.size} 
@@ -256,7 +258,7 @@ const Truck = (props) => (
   </svg>
 );
 
-const Link = (props) => (
+const Link = (props: { size: string | number | undefined; }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
     width={props.size} 
@@ -273,7 +275,7 @@ const Link = (props) => (
   </svg>
 );
 
-const TrendingUp = (props) => (
+const TrendingUp = (props: { size: string | number | undefined; }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
     width={props.size} 
@@ -290,7 +292,7 @@ const TrendingUp = (props) => (
   </svg>
 );
 
-const Building = (props) => (
+const Building = (props: { size: string | number | undefined; }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
     width={props.size} 
@@ -310,7 +312,7 @@ const Building = (props) => (
   </svg>
 );
 
-const Ship = (props) => (
+const Ship = (props: { size: string | number | undefined; }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
     width={props.size} 

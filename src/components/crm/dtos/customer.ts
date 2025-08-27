@@ -26,12 +26,14 @@ export interface CrmDealDto {
   // Additional fields for UI purposes
   customer?: CustomerDto;
   communicationStartMode?: CommunicationStartModeDto | number;
-  status?: CrmStatusDto | string | number | null ;
+  status?: CrmStatusDto | null | string ;
   statusId?: number;
   value?: string;
   createdDate?: string;
   updatedDate?: string | null;
   createdBy?: string | null;
+  createDate: string;
+  statusName?: string;
 }
 
 export interface CrmActivityTypeDto {
@@ -59,6 +61,31 @@ export interface CrmActivityDto {
   communicationDetails: string;
   communicationDate: string;
   outcome: string | null;
+  createDate: string;
+  crmId?: string;
+  statusName?: string;
+}
+
+
+export interface CrmEmailActivityDto {
+  id: number;
+  deal: CrmDealDto;
+  dealId: number;
+  customer: CustomerDto;
+  customerId: number;
+  subject?: string;
+  body?: string;
+  sentDate?: string;
+  createdDate: string;
+  updatedDate: string | null;
+  recordingPersonnel?: string;
+  createDate?: string;
+  crmId?: string;
+  activityType: CrmActivityTypeDto;
+  activityTypeId: number;
+  description: string;
+  crmStatus?: CrmStatusDto | string | number | null;
+  activityDate: string;
 }
 
 
@@ -72,6 +99,7 @@ export interface CrmStatusHistoryDto {
   newStatusId: number;
   notes: string;
   createdDate: string;
+  status?: string;
 }
 
 export interface KanbanColumn {
