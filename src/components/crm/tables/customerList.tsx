@@ -1,18 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import { useNavigate } from 'react-router-dom';
 import { AllCommunityModule, ModuleRegistry, provideGlobalGridOptions } from 'ag-grid-community';
 
-// type RowData = {
-//   id: number;
-//   name: string;
-//   customerType : string;
-//   email: string;
-//   telephoneNumber: string;
-//   industry: string;
-// };
 
 const CustomerList = () => {
   const API_BASE: string = import.meta.env.VITE_API_BASE_URL;
@@ -98,24 +90,50 @@ const CustomerList = () => {
     resizable: true,
   };
 
-// Inside your CustomerList component
-const handleEditCustomer = useCallback((customerId: any) => {
-  navigate(`/customerform/edit/${customerId}`);
-}, [navigate]);
-  
-const handleViewCustomer = useCallback((customerId: any) => {
-  navigate(`/customerform/view/${customerId}`);
-}, [navigate]);
-  
-// Handle create new customer
-const handleCreateCustomer = () => {
-  navigate('/customerform/new');
-};
+  // Inside your CustomerList component
+  const handleEditCustomer = useCallback((customerId: any) => {
+    navigate(`/customerform/edit/${customerId}`);
+  }, [navigate]);
+    
+  const handleViewCustomer = useCallback((customerId: any) => {
+    navigate(`/customerform/view/${customerId}`);
+  }, [navigate]);
+    
+  // Handle create new customer
+  const handleCreateCustomer = () => {
+    navigate('/customerform/new');
+  };
 
 
-// Fetch customers
-useEffect(() => {
-  const fetchCustomers = async () => {
+  // Fetch customers
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const response = await fetch(`${API_BASE}/core/Customers`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch customers: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setRowData(data);
+      } catch (err) {
+        console.error('Error fetching customers:', err);
+        setError('Failed to load customers. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchCustomers();
+  }, []);
+
+    
+  // Handle refresh
+  const handleRefresh = async () => {
     setLoading(true);
     setError(null);
     
@@ -129,38 +147,18 @@ useEffect(() => {
       const data = await response.json();
       setRowData(data);
     } catch (err) {
-      console.error('Error fetching customers:', err);
-      setError('Failed to load customers. Please try again later.');
+      console.error('Error refreshing customers:', err);
+      setError('Failed to refresh customers. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
-  
-  fetchCustomers();
-}, []);
 
-  
-// Handle refresh
-const handleRefresh = async () => {
-  setLoading(true);
-  setError(null);
-  
-  try {
-    const response = await fetch(`${API_BASE}/core/Customers`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch customers: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    setRowData(data);
-  } catch (err) {
-    console.error('Error refreshing customers:', err);
-    setError('Failed to refresh customers. Please try again later.');
-  } finally {
-    setLoading(false);
-  }
-};
+  const rowSelection = useMemo(() => { 
+    return {
+          mode: 'singleRow'
+      };
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -213,15 +211,14 @@ const handleRefresh = async () => {
       
       {/* AG Grid component */}
       <div className="ag-theme-alpine w-full" style={{ height: 600 }}>
-        
+          {/* @ts-ignore */}
          <AgGridReact
           ref={gridRef}
           rowData={rowData}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
+          rowSelection={rowSelection}
           animateRows={true}
-          rowSelection="single"
-          // rowSelection={{ type: 'multiple' }} 
           pagination={true}
           paginationPageSize={50}
           domLayout='autoHeight'

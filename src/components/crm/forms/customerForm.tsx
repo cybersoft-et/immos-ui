@@ -63,7 +63,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
   const [submitSuccess, setSubmitSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(editId ? true : false);
   const [loadingError, setLoadingError] = useState('');
-  const [fetchedCustomer, setFetchedCustomer] = useState(null);
+  const [fetchedCustomer, setFetchedCustomer] = useState<IFormInput | null>(null);
 
   const [uploadedDocuments, setUploadedDocuments] = useState([]);
   const [isDocumentDialogOpen, setIsDocumentDialogOpen] = useState(false);
@@ -87,7 +87,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
   
   const fileInputRef = useRef(null);
   const gridRef = useRef(null);
-  
+  // @ts-ignore
   const { register, handleSubmit, control, formState: { errors }, reset, setValue, watch , getValues  } = useForm<IFormInput>({
     defaultValues: {
       id: 0,
@@ -148,7 +148,8 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     },
   });
 
-   const { fields, append } = useFieldArray({
+  // @ts-ignore
+  const { fields, append } = useFieldArray({
     control,
     name: "documents",
   });
@@ -168,6 +169,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
 
   const { fields: specializationFields, append: appendSpecialization, remove: removeSpecialization } = useFieldArray({
     control,
+     // @ts-ignore 
     name: 'specializations',
   });
 
@@ -234,6 +236,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       
       // Process documents for the grid
       if (data.documents && data.documents.length > 0) {
+        // @ts-ignore 
         const formattedDocs = data.documents.map( doc => ({
           documentId: doc.documentId,
           name: doc.document.name || 'Untitled',
@@ -242,6 +245,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
           createDate: doc.document.createdDate || new Date().toLocaleDateString(),
           size : doc.document.size || 0,
           id: doc.documentId,
+          // @ts-ignore
           documentTypeId: lookuData.documentTypes.find(type => type.id === doc.document.documentTypeId)?.name || doc.document.documentTypeId,
           contentType: doc.document.contentType || 'application/octet-stream',
           documentPath : doc.document.documentPath ? `${API_FILE_BASE}/${doc.document.documentPath}` : '' ,
@@ -292,10 +296,9 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       const data = await response.json();
 
       console.log('#CustomerForm - fetchDocuments - Fetched documents: ', data);
-      console.log('#CustomerForm - fetchDocuments - lookuData: ', lookuData);
 
       if(data.documents && data.documents.length > 0) {
-        
+        // @ts-ignore
         const formattedDocs = data.documents.map(doc => ({
           documentId: doc.documentId,
           name: doc.document.name || 'Untitled',
@@ -304,20 +307,21 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
           createDate: doc.document.createdDate || new Date().toLocaleDateString(),
           size : doc.document.size || 0,
           id: doc.documentId,
+          // @ts-ignore
           documentTypeId: lookuData.documentTypes.find(type => type.id === doc.document.documentTypeId)?.name || doc.document.documentTypeId,
           contentType: doc.document.contentType || 'application/octet-stream',
           documentPath : doc.document.documentPath ? `${API_FILE_BASE}/${doc.document.documentPath}` : '' ,
         }));
-        console.log('#CustomerForm - fetchDocuments -M- formattedDocs: ', formattedDocs);
-        
+        console.log('#CustomerForm - fetchDocuments -M-data.documents formattedDocs: ', formattedDocs);
         setUploadedDocuments(formattedDocs);
-        console.log("CustomerForm - fetchDocuments -M- Documents loaded successfully:", data);
 
       }else{
 
         if(data.length > 1){
+          // @ts-ignore
           const formattedDocs = data.map(doc => ({
             id: doc.id,
+            // @ts-ignore
             documentTypeId: lookuData.documentTypes.find(type => type.id === doc.documentTypeId)?.name || doc.documentTypeId,
             documentId: doc.documentId,
             name: doc.name || 'Untitled',
@@ -330,13 +334,14 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
           }));
 
           setUploadedDocuments(formattedDocs);
-          console.log("CustomerForm - fetchDocuments -M- Documents loaded successfully:", data);
+          console.log("CustomerForm - fetchDocuments -M-data- formattedData:", data);
         }else{
 
           // check of data is an object or array
           if(!Array.isArray(data)) {
             const formattedDocs = {
               id: data.id,
+              // @ts-ignore
               documentTypeId: lookuData.documentTypes.find(type => type.id === data.documentTypeId)?.name || data.documentTypeId,
               documentId: data.documentId,
               name: data.name || 'Untitled',
@@ -349,12 +354,13 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
             };
              //@ts-ignore
             setUploadedDocuments([formattedDocs]);
-            console.log("CustomerForm - fetchDocuments -SINGLE- Documents loaded successfully:", data);
+            console.log("CustomerForm - fetchDocuments -S-data- formattedData:", data);
 
           }else{
 
             const formattedDocs = {
               id: data[0].id,
+              // @ts-ignore
               documentTypeId: lookuData.documentTypes.find(type => type.id === data[0].documentTypeId)?.name || data[0].documentTypeId,
               documentId: data[0].documentId,
               name: data[0].name || 'Untitled',
@@ -367,7 +373,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
             };
              //@ts-ignore
             setUploadedDocuments([formattedDocs]);
-            console.log("CustomerForm - fetchDocuments -SINGLE- Documents loaded successfully:", data);
+            console.log("CustomerForm - fetchDocuments -S-data[0]- formattedData:", data);
 
           }
         }
@@ -495,6 +501,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     // fetch(`${API_BASE}/documents/${documentId}`, { method: 'DELETE' })
     
     // Filter out the document with the given ID from both state arrays
+    // @ts-ignore
     const updatedDocuments = uploadedDocuments.filter(doc => doc.id !== documentId);
     setUploadedDocuments(updatedDocuments);
     
@@ -532,7 +539,6 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
   const handleBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     e.preventDefault();
     const value = e.target.value;
-    console.log('#CustomerForm - BLUR: ', value);
     try {
       const response = await fetch(`${API_BASE}/core/Customers/CustomerId?customerName=${value}`);
 
@@ -547,7 +553,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       setValue("consecutiveNo", data.consecutiveNumber );
 
     } catch (error) {
-        console.error("Error fetching data:", error);
+      console.error("Error fetching data:", error);
     }
   };
   
@@ -556,6 +562,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     control,
     name: 'documents',
   });
+
 
   const onSubmit = async (data: any) => {
     // If view only, don't submit
@@ -566,6 +573,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     setSubmitError('');
     setSubmitSuccess('');
     
+    let result = null;
     try {
       const url = editId 
         ? `${API_BASE}/core/Customers/${editId}` 
@@ -583,34 +591,19 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       
       if (!response.ok) {
         const errorText = await response.text();
+        setSubmitError(`Failed to ${editId ? 'update' : 'create'} customer. ${errorText}.`);
         throw new Error(`Failed to ${editId ? 'update' : 'create'} customer: ${errorText}`);
       }
       
-      const result = await response.json();
-
-      console.log('#CustomerForm - onSubmit: ', data);
-      
+      result = await response.json();      
       setSubmitSuccess(`Customer successfully ${editId ? 'updated' : 'created'}!`);
       
       // If creating a new customer, reset the form
       if (!editId) {
         reset();
-        // setUploadedDocuments([]);
+        setUploadedDocuments([]);
       }
-
-      // After successful upload, refresh the documents list
-      if(editId !== null && editId !== undefined && editId !== 0) {
-        // navigate('customerform/edit/:id'.replace(':id', editId));
-        fetchDocuments(editId); // replaced to fetch docs by ID
-        console.log('#CustomerForm - onSubmit - Fetching documents for Customer: ', editId);
-
-      }else{
-        navigate('customerform/edit/:id'.replace(':id', result?.id));
-        fetchDocuments(0, result?.id); // replace documents in the form
-        console.log('#CustomerForm - onSubmit - Fetching documents for New User: ', result?.id);
-      }
-      
-      return result;
+      // return result;
 
     } catch (error) {
       console.error(`Error ${editId ? 'updating' : 'creating'} customer:`, error);
@@ -619,10 +612,22 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
 
     } finally {
       setIsSubmitting(false);
+
+      // After successful upload, refresh the documents list
+      if(editId !== null && editId !== undefined && editId !== 0) {
+        fetchDocuments(editId); // replaced to fetch docs by ID
+        console.log('#CustomerForm - onSubmit - Fetching documents for Customer: ', editId);
+
+      }else{
+        navigate('/customerform/edit/:id'.replace(':id', result?.id));
+        fetchDocuments(0, result?.id); // replace documents in the form
+        console.log('#CustomerForm - onSubmit - Fetching documents for New User: ', result?.id);
+      }
+
     }
   };
   
-  const handleDocumentInputChange = (e) => {
+  const handleDocumentInputChange = (e: { target: { name: any; value: any; }; }) => {
     const { name, value } = e.target;
     setDocumentForm(prev => ({
       ...prev,
@@ -630,14 +635,14 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     }));
   };
   
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: { target: { files: any[]; }; }) => {
     setDocumentForm(prev => ({
       ...prev,
       Content: e.target.files[0]
     }));
   };
   
-  const handleDocumentSubmit = async (e) => {
+  const handleDocumentSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // This prevents the default form submission behavior
     setIsUploading(true);
     setUploadError('');
@@ -685,7 +690,8 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       setDocumentForm({
         Name: '',
         Description: '',
-        DocumentTypeId: 0,
+        // ts-ignore
+        DocumentTypeId: '',
         // DocumentType: '',
         Content: null
       });
@@ -695,35 +701,49 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
       
       // Reset file input
       if (fileInputRef.current) {
+        // @ts-ignore
         fileInputRef.current.value = '';
       }
 
       responseData = await response.json();
       console.log('CustomerForm - handleDocumentSubmit - response :', responseData);
 
-    } catch (error) {
+    } catch {
       setUploadError('Failed to upload document. Please try again.');
     } finally {
       setIsUploading(false);
       // After successful upload, refresh the documents list
       if(editId !== null && editId !== undefined && editId !== 0) {
-         setValue('documents', [{
-            ...documents ,
-            documentId: responseData.id,        
-          }]);
-        fetchDocuments(editId); // replaced to fetch docs by ID
-        console.log('#CustomerForm - handleDocumentSubmit - Fetching documents for Customer: ', editId);
+        
+        const formDocuments = getValues("documents");
+        console.log('#CustomerForm - handleDocumentSubmit -OLD getValues-Documents : ', formDocuments);   
+        
+        if(formDocuments.length >= 1){
+          append({         
+            documentId: Number(responseData[0].id), 
+            customerId: Number(editId)      
+          })  
+
+        } else{          
+          append({         
+            documentId: Number(responseData.id), 
+            customerId: Number(editId)
+          })    
+        }
+
+        console.log('#CustomerForm - handleDocumentSubmit -OLD getValues-After-Append-Documents : ', formDocuments);   
+        fetchDocuments(editId); // fetch docs by customer ID
 
       }else{
         // Append the new document to the uploaded documents state
         const formDocuments = getValues("documents");
-        console.log('#CustomerForm - handleDocumentSubmit - Form-Documents : ', formDocuments);
+        console.log('#CustomerForm - handleDocumentSubmit --NEW-CUSTOMER getValues-Documents : ', formDocuments);
 
-        if(formDocuments.length === 0){
-          setValue('documents', [{    
-            documentId: responseData.id, 
-            customerId: responseData.createUserId      
-          }]);
+        if(formDocuments.length >= 1){
+          append({
+            documentId: Number(responseData.id), 
+            customerId: Number(responseData.createUserId)  
+          });
 
         } else{          
           append({         
@@ -731,17 +751,15 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
             customerId: responseData.createUserId
           })    
         }
-                const formDocuments2 = getValues("documents");
-        console.log('#CustomerForm - handleDocumentSubmit - After-Appened : ', formDocuments2);
         fetchDocuments(0, responseData?.id); // replace documents in the form
-        console.log('#CustomerForm - handleDocumentSubmit - Fetching documents for New User: ', responseData?.id);
+        console.log('#CustomerForm - handleDocumentSubmit -NEW-CUSTOMER Fetching documents for New User: ', responseData?.id);
       }
 
       setUploadError('');
     }
   };
 
-  const handleCustomerTypeChange = (e) => {
+  const handleCustomerTypeChange = (e: { target: { value: React.SetStateAction<string>; }; }) => {
     setCustomerType(e.target.value);
   };
 
@@ -868,6 +886,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                 onBlur={handleBlur}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
+                // ts-ignore
                 defaultValue={fetchedCustomer?.name || ''}
               />
               {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
@@ -882,6 +901,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                 onChange={handleCustomerTypeChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
+                // ts-ignore
                 defaultValue={fetchedCustomer?.customerType || 'Individual'}
               >
                 <option value="Individual">Individual</option>
@@ -904,6 +924,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
+                // ts-ignore
                 defaultValue={fetchedCustomer?.email || ''}
               />
               {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
@@ -917,6 +938,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                 {...register('telephoneNumber', { required: 'Telephone number is required' })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
+                // ts-ignore
                 defaultValue={fetchedCustomer?.telephoneNumber || ''}
               />
               {errors.telephoneNumber && <p className="mt-1 text-sm text-red-600">{errors.telephoneNumber.message}</p>}
@@ -930,6 +952,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                 {...register('alternateTelephoneNumber')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
+                // ts-ignore
                 defaultValue={fetchedCustomer?.alternateTelephoneNumber || ''}
               />
             </div>
@@ -942,6 +965,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                 {...register('industry')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
+                // ts-ignore
                 defaultValue={fetchedCustomer?.industry || ''}
               />
             </div>
@@ -955,11 +979,14 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                 onChange={handleCustomerTypeChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
+                // ts-ignore
                 defaultValue={fetchedCustomer?.categoryId || 'Individual'}
               >
                 <option value={0}>Select Category ...</option>                
                 {lookuData.customerCategories.map((option, index) => (
+                  // @ts-ignore
                   <option key={index} value={option.id}>
+                    {/* @ts-ignore */}
                       {option.value}
                   </option>
                 ))}            
@@ -976,14 +1003,17 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                 onChange={handleCustomerTypeChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
+                // ts-ignore
                 defaultValue={fetchedCustomer?.subCategoryId}
               > 
-              <option value={0}>Select Sub-Category ...</option>             
+              <option value={0}>Select Sub-Category ...</option>   
                 {lookuData.subCustomerCategories.map((option, index) => (
+                  // @ts-ignore 
                   <option key={index} value={option.id}>
+                    {/* @ts-ignore */}
                       {option.value}
                   </option>
-                ))}            
+                ))}     
               </select>             
             </div>
           </div>
@@ -995,6 +1025,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
             <h2 className="text-xl font-semibold">Specializations</h2>
             <button
               type="button"
+              //  @ts-ignore
               onClick={() => appendSpecialization('')}
               className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
             >
@@ -1106,7 +1137,8 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
         </div>
         
         {/* Company Information - Only visible when customerType is Company */}
-        {customerType === 'Company' || 'Individual' && (
+        {/* ts-ignore */}
+        {customerType && (
           <>
             {/* Company Head */}
             <div className="bg-white p-6 rounded-lg shadow">
@@ -1381,6 +1413,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
               <AgGridReact
                 ref={gridRef}
                 rowData={uploadedDocuments}
+                // @ts-ignore
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
                 animateRows={true}
@@ -1459,11 +1492,14 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                       value={documentForm.DocumentTypeId}                      
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       disabled={isViewOnly}
+                      // @ts-ignore
                       defaultValue={fetchedCustomer?.DocumentTypeId}
                     >   
                     <option value={0}>Select DocumentType ...</option>            
                       {lookuData.documentTypes.map((option, index) => (
+                        // @ts-ignore 
                         <option key={index} value={option.id}>
+                            {/* @ts-ignore   */}
                             {option.name}
                         </option>
                       ))}            
@@ -1476,6 +1512,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                     </label>
                     <input
                       type="file"
+                      //  @ts-ignore
                       onChange={handleFileChange}
                       ref={fileInputRef}
                       required
@@ -1498,7 +1535,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                       Cancel
                     </button>
                     <button
-                      type="submit"
+                      type="button"
                       disabled={isUploading}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300"
                       onClick={(e) => {
@@ -1536,39 +1573,48 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                   {viewDocumentId && (
                     <div>
                       {(() => {
+                        {/* @ts-ignore */}
                         const document = uploadedDocuments.find(doc => doc.id === viewDocumentId);
                         return document ? (
                           <div className="space-y-3">
                             <div className="flex">
                               <span className="font-semibold w-32">Document ID:</span>
+                              {/* @ts-ignore */}
                               <span>{document.id}</span>
                             </div>
                             <div className="flex">
                               <span className="font-semibold w-32">Name:</span>
+                              {/* @ts-ignore */}
                               <span>{document.name}</span>
                             </div>
                             <div className="flex">
                               <span className="font-semibold w-32">Type ID:</span>
+                              {/* @ts-ignore */}
                               <span>{document.documentTypeId}</span>
                             </div>
                             <div className="flex">
                               <span className="font-semibold w-32">Description:</span>
+                              {/* @ts-ignore */}
                               <span>{document.description || 'No description'}</span>
                             </div>
                             <div className="flex">
                               <span className="font-semibold w-32">File Type:</span>
+                              {/* @ts-ignore */}
                               <span>{document.contentType}</span>
                             </div>
                             <div className="flex">
                               <span className="font-semibold w-32">Size:</span>
+                              {/*  @ts-ignore */}
                               <span>{formatFileSize(document.size)}</span>
                             </div>
                             <div className="flex">
                               <span className="font-semibold w-32">Upload Date:</span>
+                              {/*  @ts-ignore */}
                               <span>{formatDate(document.createDate)}</span>
                             </div>
                             <div className="flex">
                               <span className="font-semibold w-32">File Path:</span>
+                              {/* @ts-ignore */}
                               <span className="text-sm text-gray-500 break-all">{document.documentPath}</span>
                             </div>
                             
@@ -1579,7 +1625,9 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
                                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                                   onClick={() => {
                                     // In a real implementation, this would open the document or download it
+                                    // @ts-ignore
                                     console.log(`Download document: ${document.id}`);
+                                    // @ts-ignore
                                     window.alert(`Document download would start here: ${document.documentPath}`);
                                   }}
                                 >

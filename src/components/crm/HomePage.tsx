@@ -4,7 +4,7 @@ import Header from './layout/header';
 import { useState } from 'react';
 
 export default function HomePage() {
-    const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // const [sidebarOpen, setSidebarOpen] = useState(true);
   // const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -14,6 +14,7 @@ export default function HomePage() {
   //   setIsSidebarOpen(!isSidebarOpen);
   // };
 
+  // @ts-ignore
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
     // Here you would implement the actual dark mode functionality

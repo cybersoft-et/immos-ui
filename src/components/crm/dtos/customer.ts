@@ -34,6 +34,7 @@ export interface CrmDealDto {
   createdBy?: string | null;
   createDate: string;
   statusName?: string;
+  crmId?: number;
 }
 
 export interface CrmActivityTypeDto {
@@ -62,7 +63,7 @@ export interface CrmActivityDto {
   communicationDate: string;
   outcome: string | null;
   createDate: string;
-  crmId?: string;
+  crmId?: string | number;
   statusName?: string;
 }
 

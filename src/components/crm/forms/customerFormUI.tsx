@@ -1,8 +1,20 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, SetStateAction, ChangeEvent } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
+import { ColDef } from 'ag-grid-community';
+
+interface IDocument {
+  id: number;
+  name: string;
+  description: string;
+  documentTypeId: number;
+  contentType: string;
+  size: number;
+  createDate: string;
+  documentPath: string;
+}
 
 const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
   const [customerType, setCustomerType] = useState('Individual');
@@ -14,17 +26,18 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
   const [fetchedCustomer, setFetchedCustomer] = useState(null);
   const [activeTab, setActiveTab] = useState('basic');
   
-  const [uploadedDocuments, setUploadedDocuments] = useState([]);
+  const [uploadedDocuments, setUploadedDocuments] = useState<IDocument[]>([]);
   const [isDocumentDialogOpen, setIsDocumentDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
-  const [viewDocumentId, setViewDocumentId] = useState(null);
+  const [viewDocumentId, setViewDocumentId] = useState<number | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [documentsError, setDocumentsError] = useState('');
   const fileInputRef = useRef(null);
   const gridRef = useRef(null);
   
+  // @ts-ignore
   const { register, handleSubmit, control, formState: { errors }, reset, setValue, watch } = useForm({
     defaultValues: {
       id: 0,
@@ -91,16 +104,25 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
 
   const { fields: specializationFields, append: appendSpecialization, remove: removeSpecialization } = useFieldArray({
     control,
+    // @ts-ignore
     name: 'specializations',
   });
 
+  // @ts-ignore
   const { fields: documentFields, append: appendDocument, remove: removeDocument, replace: replaceDocuments } = useFieldArray({
     control,
+    // @ts-ignore
     name: 'documents',
   });
 
   // Document form state
-  const [documentForm, setDocumentForm] = useState({
+  const [documentForm, setDocumentForm] = useState<{
+    Name: string;
+    Description: string;
+    DocumentTypeId: number;
+    DocumentType: string;
+    Content: File | null;
+  }>({
     Name: '',
     Description: '',
     DocumentTypeId: 1,
@@ -168,6 +190,7 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
       setUploadedDocuments(data);
       
       // Update form documents array with the IDs
+      // @ts-ignore
       const documentIds = data.map(doc => ({ documentId: doc.id }));
       replaceDocuments(documentIds);
       
@@ -181,12 +204,12 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
   };
 
   // Handle customer type change
-  const handleCustomerTypeChange = (e) => {
+  const handleCustomerTypeChange = (e: { target: { value: SetStateAction<string>; }; }) => {
     setCustomerType(e.target.value);
   };
 
   // Handle document form input change
-  const handleDocumentInputChange = (e) => {
+  const handleDocumentInputChange = (e: { target: { name: any; value: any; }; }) => {
     const { name, value } = e.target;
     setDocumentForm(prev => ({
       ...prev,
@@ -195,10 +218,11 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
   };
   
   // Handle file input change
-  const handleFileChange = (e) => {
+  // @ts-ignore
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     setDocumentForm(prev => ({
       ...prev,
-      Content: e.target.files[0]
+      Content: e.target.files ? e.target.files[0] : null
     }));
   };
   
@@ -211,6 +235,7 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
       const formData = new FormData();
       formData.append('Name', documentForm.Name);
       formData.append('Description', documentForm.Description);
+      // @ts-ignore
       formData.append('DocumentTypeId', documentForm.DocumentTypeId);
       formData.append('DocumentType', documentForm.DocumentType);
       
@@ -227,6 +252,7 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       
+      // @ts-ignore
       const result = await response.json();
       
       // After successful upload, refresh the documents list
@@ -246,6 +272,7 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
       
       // Reset file input
       if (fileInputRef.current) {
+        // @ts-ignore
         fileInputRef.current.value = '';
       }
     } catch (error) {
@@ -257,14 +284,14 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
   };
 
   // Function to handle viewing a document
-  const handleViewDocument = (documentId) => {
+  const handleViewDocument = (documentId: number) => {
     setViewDocumentId(documentId);
     setIsViewDialogOpen(true);
     console.log(`Viewing document: ${documentId}`);
   };
   
   // Function to handle document deletion
-  const handleDeleteDocument = (documentId) => {
+  const handleDeleteDocument = (documentId: number) => {
     // Don't allow deletion in view-only mode
     if (isViewOnly) return;
     
@@ -282,29 +309,30 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
     setUploadedDocuments(updatedDocuments);
     
     // Update the react-hook-form documents array
+    // @ts-ignore
     const updatedFormDocuments = documentFields.filter(doc => doc.documentId !== documentId);
     replaceDocuments(updatedFormDocuments);
     
-    console.log(`Deleted document: ${documentId}`);
   };
 
   // Column definitions for the ag-grid
-  const [columnDefs] = useState([
+  const [columnDefs] = useState<ColDef<IDocument>[]>([
     { field: 'id', headerName: 'ID', sortable: true, filter: true, width: 80 },
     { field: 'name', headerName: 'Name', sortable: true, filter: true, flex: 1 },
+    { field: 'description', headerName: 'Description', sortable: true, filter: true, flex: 1 },
     { field: 'description', headerName: 'Description', sortable: true, filter: true, flex: 1 },
     { field: 'documentTypeId', headerName: 'Type ID', sortable: true, filter: true, width: 100 },
     { field: 'contentType', headerName: 'File Type', sortable: true, filter: true, width: 120 },
     { field: 'size', headerName: 'Size', sortable: true, filter: true, width: 100,
-      valueFormatter: params => formatFileSize(params.value)
+      valueFormatter: (params: { value: any; }) => formatFileSize(params.value)
     },
     { field: 'createDate', headerName: 'Upload Date', sortable: true, filter: true, width: 160,
-      valueFormatter: params => formatDate(params.value)
+      valueFormatter: (params: { value: any; }) => formatDate(params.value)
     },
     {
       headerName: 'Actions',
       width: 120,
-      cellRenderer: (params) => {
+      cellRenderer: (params: { data: { id: number; }; }) => {
         return (
           <div className="flex space-x-2">
             <button
@@ -314,7 +342,7 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
               View
             </button>
             <button
-              onClick={() => handleDeleteDocument(params.data.id)}
+              onClick={() => handleDeleteDocument(params.data.id as number)}
               className="px-2 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 text-xs"
               disabled={isViewOnly}
             >
@@ -334,7 +362,7 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
   };
   
   // Format file size
-  const formatFileSize = (bytes) => {
+  const formatFileSize = (bytes: number) => {
     if (!bytes) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -343,14 +371,14 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
   };
   
   // Format date
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string | number | Date) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleString();
   };
 
   // Form submission handler
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: any) => {
     // If view only, don't submit
     if (isViewOnly) return;
     
@@ -474,6 +502,7 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
                 {...register('name', { required: 'Name is required' })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
+                // @ts-ignore
                 defaultValue={fetchedCustomer?.name || ''}
               />
               {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
@@ -488,6 +517,7 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
                 onChange={handleCustomerTypeChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
+                // @ts-ignore
                 defaultValue={fetchedCustomer?.customerType || 'Individual'}
               >
                 <option value="Individual">Individual</option>
@@ -510,6 +540,7 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
                 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
+                // @ts-ignore
                 defaultValue={fetchedCustomer?.email || ''}
               />
               {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
@@ -523,6 +554,7 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
                 {...register('telephoneNumber', { required: 'Telephone number is required' })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
+                // @ts-ignore
                 defaultValue={fetchedCustomer?.telephoneNumber || ''}
               />
               {errors.telephoneNumber && <p className="mt-1 text-sm text-red-600">{errors.telephoneNumber.message}</p>}
@@ -536,6 +568,7 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
                 {...register('alternateTelephoneNumber')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
+                // @ts-ignore
                 defaultValue={fetchedCustomer?.alternateTelephoneNumber || ''}
               />
             </div>
@@ -548,6 +581,7 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
                 {...register('industry')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isViewOnly}
+                // @ts-ignore
                 defaultValue={fetchedCustomer?.industry || ''}
               />
             </div>
@@ -871,6 +905,7 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
                 {!isViewOnly && (
                   <button
                     type="button"
+                    // @ts-ignore
                     onClick={() => appendSpecialization('')}
                     className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
                   >
@@ -951,9 +986,9 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
               </div>
             )}
             
-            {!isLoadingDocuments && uploadedDocuments.length === 0 ? (
+            { (!isLoadingDocuments && uploadedDocuments.length === 0) ? (
+              <>
               <p className="text-gray-500 italic">No documents added yet. {!isViewOnly && 'Click "Upload Document" to add one.'}</p>
-            ) : (
               <div className="ag-theme-alpine" style={{ height: 400, width: '100%' }}>
                 <AgGridReact
                   ref={gridRef}
@@ -963,11 +998,12 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
                   animateRows={true}
                   pagination={true}
                   paginationPageSize={50}
-                  suppressRowClickSelection={true}
-                  rowSelection={{ type: 'multiple' }}
-                />
+                  suppressRowClickSelection={true} />
               </div>
-            )}
+              </>
+            ): ( <p className="text-gray-500 italic">No documents added yet. {!isViewOnly && 'Click "Upload Document" to add one.'}</p>
+)
+          }
           </div>
         );
       case 'payee':
@@ -1236,7 +1272,7 @@ const CustomerFormUI = ({ editId = null, isViewOnly = false }) => {
                     value={documentForm.Description}
                     onChange={handleDocumentInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows="3"
+                    rows={3}
                   ></textarea>
                 </div>
                 

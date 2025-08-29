@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { SetStateAction, useState } from 'react';
+import { useNavigate, useLocation, To } from 'react-router-dom';
 import { ChevronDown, ChevronRight, LogOut, Settings, HelpCircle } from 'lucide-react';
 
 const Sidebar = ( ) => {
@@ -41,7 +41,7 @@ const Sidebar = ( ) => {
     }
   };
 
-  const toggleSubmenu = (key) => {
+  const toggleSubmenu = (key: SetStateAction<null>) => {
     if (openSubmenu === key) {
       setOpenSubmenu(null);
     } else {
@@ -49,15 +49,15 @@ const Sidebar = ( ) => {
     }
   };
 
-  const handleNavigation = (key) => {
+  const handleNavigation = (key: To) => {
     navigate(key);
   };
 
-  const isActive = (path) => {
+  const isActive = (path: string) => {
     return location.pathname === path;
   };
 
-  const renderMenuItems = (items) => {
+  const renderMenuItems = (items: any[]) => {
      {/* @ts-ignore */}
     return items.map((item) => (
       <div key={item.key} className="mb-1">

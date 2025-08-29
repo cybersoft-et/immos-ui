@@ -3,8 +3,15 @@ import { Bell, Moon, Sun, ChevronDown, Search, X } from 'lucide-react';
 import { useAuth } from '../../../auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+type NotificationItemProps = {
+  title: string;
+  time: string;
+  isNew: boolean;
+  onClick: () => void;
+};
+
 // Notification component
-const NotificationItem = ({ title, time, isNew, onClick }) => (
+const NotificationItem = ({ title, time, isNew, onClick }: NotificationItemProps) => (
   <div 
     className={`p-3 border-b hover:bg-gray-50 cursor-pointer ${isNew ? 'bg-blue-50' : ''}`}
     onClick={onClick}
@@ -20,7 +27,7 @@ const NotificationItem = ({ title, time, isNew, onClick }) => (
   </div>
 );
 
-const Header = ({ userName = "PAG-ADMIN", userAvatar = "/api/placeholder/40/40" }) => {
+const Header = () => {
   // State management
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -47,7 +54,7 @@ const Header = ({ userName = "PAG-ADMIN", userAvatar = "/api/placeholder/40/40" 
   };
 
   // Handle notification click
-  const handleNotificationClick = (id) => {
+  const handleNotificationClick = (id: number) => {
     setNotifications(
       notifications.map(n => n.id === id ? { ...n, isNew: false } : n)
     );
@@ -67,7 +74,7 @@ const Header = ({ userName = "PAG-ADMIN", userAvatar = "/api/placeholder/40/40" 
   };
 
   // Handle key press for search
-  const handleKeyPress = (e) => {
+  const handleKeyPress = (e: { key: string; }) => {
     if (e.key === 'Enter') {
       handleSearchSubmit();
     }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, ChevronDown, Plus, X, Calendar, Phone, Mail, MessageSquare, Edit, Send, Clock, BookText, User, FileText } from 'lucide-react';
 import { CustomerDto , CrmDealDto, CrmActivityDto, CrmStatusDto, CommunicationStartModeDto, CrmStatusHistoryDto, KanbanColumn, EmailTemplateDto } from '../dtos/customer';
+import { useAuth } from '../../../auth/AuthContext';
 
 // Define interfaces based on provided types
 
@@ -8,6 +9,7 @@ const CrmKanbanBoard = () => {
   // API configuration
   // Todo: move to config file
   const API_BASE: string = import.meta.env.VITE_API_BASE_URL;
+  const { user } = useAuth();
 
   // State for fetched data
   const [crmData, setCrmData] = useState<CrmDealDto[]>([]);
@@ -393,7 +395,7 @@ const CrmKanbanBoard = () => {
       communicationStartModeId: 0,
       communicationStartDate: new Date().toISOString(),
       requestedServices: [],
-      recordingPersonnel: '',
+      recordingPersonnel: user?.userName ||'',
       value: '',
       statusId: columnId,
     });
@@ -412,7 +414,8 @@ const CrmKanbanBoard = () => {
       communicationStartModeId: card.communicationStartModeId,
       communicationStartDate: card.communicationStartDate,
       requestedServices: card.requestedServices,
-      recordingPersonnel: card.recordingPersonnel,
+      recordingPersonnel: user?.userName ||'' ,
+      createdBy : card.createdBy || user?.userName || '' ,
       value: card.value || '',
       statusId: columnId || card.statusId || 1,
       status: statuses.find(s => s.id === (columnId || card.statusId))?.statusName || 'Initiated',
@@ -424,7 +427,8 @@ const CrmKanbanBoard = () => {
       communicationStartModeId: card.communicationStartModeId,
       communicationStartDate: card.communicationStartDate,
       requestedServices: card.requestedServices,
-      recordingPersonnel: card.recordingPersonnel,
+      recordingPersonnel: user?.userName || '',
+      createdBy : card.createdBy || user?.userName || '' ,
       value: card.value || '',
       statusId: columnId || card.statusId || 1,
       status: statuses.find(s => s.id === (columnId || card.statusId))?.statusName || 'Initiated',
@@ -496,6 +500,8 @@ const CrmKanbanBoard = () => {
     let apiMethod = 'POST';
     let apiUrl = `${API_BASE}/Crm`;
 
+    console.log('#crmKanbanBoard3 - handleSaveCard: ', { newCard, customer, communicationStartMode, status, isEditMode, editingCard }); 
+
     if (isEditMode && editingCard) {
       // Update existing card
       const updatedCard: CrmDealDto = {
@@ -527,7 +533,8 @@ const CrmKanbanBoard = () => {
         status : status ? status : statuses.find(s => s.id === newCardColumn)?.statusName || 'Initiated',
         createdDate: now,
         updatedDate: null,
-        value: newCard.value || '$0'
+        value: newCard.value || '$0',
+        createdBy : user?.userName ||'',
       };
 
       updatedColumns = columns.map(col =>
@@ -538,11 +545,13 @@ const CrmKanbanBoard = () => {
 
       apiPayload = {
         ...newCard,
-        recordingPersonnel: "PAGAdmin"
+        recordingPersonnel: user?.userName ||'',
+        createdBy : user?.userName ||'',
       };
     }
 
     setColumns(updatedColumns);
+
 
     // API call
     try {
@@ -573,7 +582,8 @@ const CrmKanbanBoard = () => {
       communicationStartModeId: 0,
       communicationStartDate: new Date().toISOString(),
       requestedServices: [],
-      recordingPersonnel: '',
+      recordingPersonnel: user?.userName ||'',
+      createdBy : user?.userName ||'',
       value: '',
     });
     setNewCardColumn(null);
@@ -588,7 +598,8 @@ const CrmKanbanBoard = () => {
       communicationStartModeId: 0,
       communicationStartDate: new Date().toISOString(),
       requestedServices: [],
-      recordingPersonnel: '',
+      recordingPersonnel: user?.userName ||'',
+      createdBy : user?.userName ||'',
       value: '',
     });
     setNewCardColumn(null);
@@ -597,6 +608,9 @@ const CrmKanbanBoard = () => {
   // Activity management
   // Show activity form for a deal
   const handleShowActivityForm = (deal: CrmDealDto) => {
+
+    console.log('#crmKanbanBoard3 - handleShowActivityForm: ', deal);
+
     setSelectedDeal(deal);
     setShowActivityForm(true);
     setNewActivity({
@@ -608,9 +622,10 @@ const CrmKanbanBoard = () => {
       communicationDetails: '',
       outcome: '',
       personContacted: '',
-      recordingPersonnel: 'PAGAdmin',
+      recordingPersonnel: user?.userName || '',
       crmStatus: null,
       crmStatusId: 1, // Default to 'Initiated'
+      crmId: Number(deal.id) || 0
     });
   };
 
@@ -635,6 +650,10 @@ const CrmKanbanBoard = () => {
 
     const now = new Date().toISOString();
 
+    console.log('#crmKanbanBoard3 - handleSaveActivity: selectedDeal ', selectedDeal);  
+    console.log('#crmKanbanBoard3 - handleSaveActivity: ', newActivity);
+
+    
     // API call
     try {
       // Create new activity - FOR UI
@@ -652,13 +671,13 @@ const CrmKanbanBoard = () => {
         createdDate: now,
         updatedDate: null,
         crmStatus: newActivity.crmStatus || 'Initiated' ,
-        recordingPersonnel: 'PAGAdmin',
+        recordingPersonnel: user?.userName || '',
         personContacted: newActivity.personContacted || '',
         communicationMode: getActivityTypeName(newActivity.activityTypeId || 1),
         communicationDetails: newActivity.description || '',
         communicationDate: newActivity.communicationDate || now,
         // @ts-ignore
-        outcome: newActivity.crmStatus['statusName'] || 'Initiated' 
+        outcome: newActivity.crmStatus.statusName || 'Initiated' 
       };
       // Create new activity - FOR BACKEND
       const apiActivity = {
@@ -666,13 +685,14 @@ const CrmKanbanBoard = () => {
         communicationMode: getActivityTypeName(newActivity.activityTypeId || 1),
         communicationDetails: newActivity.description || '',
         personContacted: newActivity.personContacted || '',
-        recordingPersonnel: 'PAGAdmin',
+        recordingPersonnel: user?.userName || '',
         // @ts-ignore
-        outcome: newActivity.crmStatus['statusName'] || 'Initiated' 
+        outcome:  newActivity.crmStatus || 'Initiated' 
       };
       
-      console.log('#crmKanbanBoard3 - handleSaveActivity: ', apiActivity);
-
+      console.log(`#crmKanbanBoard3 - handleSaveActivity: USER - ${selectedDeal.id} `, user);
+      console.log(`#crmKanbanBoard3 - handleSaveActivity: SUBMIT - ${selectedDeal.id} `, apiActivity);
+      
       // Send to API
       const response = await fetch(`${API_BASE}/Crm/${selectedDeal.id}/communications`, {
         method: 'POST',
@@ -796,7 +816,7 @@ const CrmKanbanBoard = () => {
         .replace(/{{customerName}}/g, selectedDealForEmail.customer?.name || '')
         .replace(/{{referenceNumber}}/g, selectedDealForEmail.referenceNumber)
         .replace(/{{requestedServices}}/g, selectedDealForEmail.requestedServices.join(', '))
-        .replace(/{{recordingPersonnel}}/g, selectedDealForEmail.recordingPersonnel);
+        .replace(/{{recordingPersonnel}}/g, selectedDealForEmail.recordingPersonnel || user?.userName || '');
     };
 
     setEmailForm({
@@ -905,7 +925,7 @@ const CrmKanbanBoard = () => {
   };
 
   // Close activities sidebar
-  //@ts-ignore
+  // @ts-ignore
   const handleCloseActivitiesSidebar = () => {
     setShowActivitySidebar(false);
     setSelectedDealForActivities(null);
@@ -945,7 +965,7 @@ const CrmKanbanBoard = () => {
 
       const commData = activitiesData?.map( comms => ({
         ...comms,
-        //@ts-ignore
+        // @ts-ignore
         deal: crmData.find(crm => crm.id === comms.crmId),
         activityType : activities.find(activity => activity.id === comms.id)
       }));
@@ -954,7 +974,7 @@ const CrmKanbanBoard = () => {
 
 
       // Cache the activities for this deal
-      //@ts-ignore
+      // @ts-ignore
       setDealActivities(prev => ({
         ...prev,
         [dealId]: commData
@@ -1173,7 +1193,8 @@ const CrmKanbanBoard = () => {
                               className="text-gray-400 hover:text-gray-600"
                                onClick={(e) => {
                                 e.stopPropagation();
-                                handleShowActivityForm(card);
+                                // handleShowActivityForm(card);
+                                handleShowActivitiesSidebar(card);
                               }}
                               title="Add Activity"
                             >

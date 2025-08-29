@@ -15,12 +15,14 @@ import "./App.css";
 // Wrapper components to extract and pass URL parameters
 const CustomerFormWithId = () => {
   const { id } = useParams();
-  return <CustomerForm editId={id} />;
+  // @ts-ignore
+  return <CustomerForm editId={id || null} />;
 };
 
 const CustomerViewWithId = () => {
   const { id } = useParams();
-  return <CustomerForm editId={id} isViewOnly={true} />;
+  // @ts-ignore
+  return <CustomerForm editId={id || null} isViewOnly={true} />;
 };
 
 const App = () => {

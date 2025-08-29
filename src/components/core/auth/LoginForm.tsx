@@ -18,7 +18,7 @@ export default function LoginForm () {
 
   const from = location.state?.from?.pathname || '/';
 
-  const handleChange = (e) => {
+  const handleChange = (e: { target: { name: any; value: any; }; }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -44,7 +44,7 @@ export default function LoginForm () {
       } else {
         setError('Invalid email or password');
       }
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);
