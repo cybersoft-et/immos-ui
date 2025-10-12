@@ -1,16 +1,18 @@
-const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL;
-
 interface ApiOptions extends RequestInit {
   requireAuth?: boolean;
 }
 
 export const apiRequest = async (endpoint: string, options: ApiOptions = {}) => {
+  const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL;
   const { requireAuth = true, ...fetchOptions } = options;
-  
+
   const config: RequestInit = {
     ...fetchOptions,
+    mode: 'cors',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       ...fetchOptions.headers,
     },
   };
@@ -53,6 +55,9 @@ export const API_BASE = {
     apiRequest(endpoint, {
       ...options,
       method: 'POST',
+      headers: {
+          'Content-Type': 'application/json',
+      },
       body: data ? JSON.stringify(data) : undefined,
     }),
     

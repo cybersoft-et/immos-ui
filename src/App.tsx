@@ -11,6 +11,14 @@ import SalesPipeline from "./components/crm/modules/salesPipeLine";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { AuthProvider } from "./auth/AuthContext";
 import "./App.css";
+import SettingsPage from "./components/crm/layout/SettingsPage";
+import QuoteRequestForm from "./components/crm/modules/QuoteRequestForm";
+import QuoteRequestFormPortal from "./components/crm/modules/QuoteRequestFormPortal";
+import QuoteList from "./components/crm/tables/QuoteList";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import QuoteRequestFormV2 from "./components/crm/modules/QuoteRequestFormV2";
+import QuoteRequestFormV3 from "./components/crm/modules/QuoteRequestFormV3";
+
 
 // Wrapper components to extract and pass URL parameters
 const CustomerFormWithId = () => {
@@ -24,6 +32,9 @@ const CustomerViewWithId = () => {
   // @ts-ignore
   return <CustomerForm editId={id || null} isViewOnly={true} />;
 };
+
+const queryClient = new QueryClient();
+
 
 const App = () => {
 
@@ -78,12 +89,45 @@ const App = () => {
               </ProtectedRoute>
             }/>
 
-             <Route path="salesPipeline" element={ 
+            <Route path="salesPipeline" element={ 
               <ProtectedRoute>
                 <SalesPipeline />
               </ProtectedRoute>
-            }/>        
+            }/>
 
+            <Route path="settings" element={ 
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }/>  
+
+            <Route path="requestQuoteList" element={             
+              <QueryClientProvider client={queryClient}>
+                <QuoteList />
+              </QueryClientProvider>
+            }/>   
+
+            {/* Quote Request Internal */}
+            <Route path="requestquoteinternal" element={ 
+              <ProtectedRoute>
+                <QuoteRequestForm />
+              </ProtectedRoute>
+            }/> 
+
+             {/* Quote Request Internal */}
+            <Route path="requestquoteinternal" element={ 
+              <ProtectedRoute>
+                <QuoteRequestForm />
+              </ProtectedRoute>
+            }/> 
+ 
+            {/* Trial */}
+            <Route path="quoteRequestFormV2" element={ 
+              <ProtectedRoute>
+                <QuoteRequestFormV3 />
+              </ProtectedRoute>
+            }/>  
+                      
             <Route path="*" element={<h1>Not Found</h1>} />       
           </Route>              
         </Routes>

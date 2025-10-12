@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:prod": "tsc -b && vite build --mode production",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -15,6 +16,8 @@
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@reduxjs/toolkit": "^2.5.1",
     "@tailwindcss/postcss7-compat": "^2.2.17",
+    "@tanstack/react-query": "^5.90.2",
+    "@types/cors": "^2.8.19",
     "ag-grid-community": "^33.1.0",
     "ag-grid-react": "^33.1.0",
     "axios": "^1.7.9",

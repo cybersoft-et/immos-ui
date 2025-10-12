@@ -1,6 +1,6 @@
 import { SetStateAction, useState } from 'react';
 import { useNavigate, useLocation, To } from 'react-router-dom';
-import { ChevronDown, ChevronRight, LogOut, Settings, HelpCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, LogOut, Settings, HelpCircle, Quote } from 'lucide-react';
 
 const Sidebar = ( ) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -26,6 +26,12 @@ const Sidebar = ( ) => {
     { name: "Integration", icon: <Link size={20}/>, key: "integration" },
     { name: "Analytics", icon: <TrendingUp size={20}/>, key: "analytics" },
     { name: "Shipping", icon: <Ship size={20}/>, key: "shipping" },
+    { name: "Request A Quote List", icon: <Quote size={20}/>, key: "requestQuoteList" }, 
+    { name: "Request A Quote Form (Portal)", icon: <Quote size={20}/>, key: "requestquoteportal" }, 
+    { name: "Request A Quote Form (UNDONE)", icon: <Quote size={20}/>, key: "requestquoteinternal" },
+    { name: "Request A Quote Form (Trial)", icon: <Quote size={20}/>, key: "quoteRequestFormV2" }, 
+ 
+    
   ];
 
   const bottomMenuItems = [

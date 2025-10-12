@@ -642,7 +642,7 @@ const CustomerForm = ({ editId = null, isViewOnly = false }) => {
     }));
   };
   
-  const handleDocumentSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleDocumentSubmit = async (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault(); // This prevents the default form submission behavior
     setIsUploading(true);
     setUploadError('');
